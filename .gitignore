@@ -1,0 +1,44 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# SvelteKit
+.svelte-kit/
+build/
+.output/
+
+# Deno
+.deno/
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Prisma
+prisma/.env
+
+# Test
+coverage/
+.nyc_output/
+
+# Claude Code (user-specific MCP configs may contain secrets)
+.claude/config.json
+
+# Temporary files
+*.tmp
+.cache/

@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  # PostgreSQL for local development
+  postgres:
+    image: postgres:16-alpine
+    container_name: susumon-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: susumon
+      POSTGRES_PASSWORD: susumon_dev_password
+      POSTGRES_DB: susumon_dev
+      TZ: Asia/Tokyo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U susumon"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Adminer - PostgreSQL Web UI (optional, lightweight alternative to Prisma Studio)
+  adminer:
+    image: adminer:latest
+    container_name: susumon-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
