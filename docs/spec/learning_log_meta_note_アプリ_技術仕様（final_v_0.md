@@ -10,7 +10,7 @@
   - UI ルーティング：`+page.svelte`
   - API ルーティング：`src/routes/api/**/+server.ts`
 - 実行環境：**Deno Deploy**
-- DB：**Neon** または **Deno Deploy Prisma Postgres**（いずれも PostgreSQL）
+- DB：**Deno Deploy Prisma Postgres**（PostgreSQL）
 - ORM：**Prisma（Edge/Deno Deploy対応のデプロイガイドに従う）**
 - 認証：**Supabase Auth（GitHub OAuth）**
 - ID：
@@ -645,7 +645,7 @@ paths:
 #### 必須
 
 - `DATABASE_URL`
-  - Neon または Prisma Postgres の接続URL
+  - Prisma Postgres（本番）またはローカル PostgreSQL（開発）の接続URL
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
@@ -786,4 +786,3 @@ v0.1 は安全性・SSR 互換性を優先し、以下で確定。
 ---
 
 以上を 技術仕様（Final v0.1）とする。
-

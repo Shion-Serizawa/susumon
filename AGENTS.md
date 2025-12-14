@@ -163,7 +163,7 @@ deno task test
 ## Gotchas & Pitfalls
 
 ### [2025-01-XX] Deno Deploy + SvelteKit
-- `@deno/svelte-adapter` を使用（公式ドキュメント参照: `docs/tech/deno_deploy_sveltekit_注意点_2025.md`）
+- `@sveltejs/adapter-deno` を使用（公式ドキュメント参照: `docs/tech/deno_deploy_sveltekit_注意点_2025.md`）
 - `deno.json` の `compilerOptions.lib` に `["deno.window", "dom"]` 必須
 
 ### [2025-01-XX] Supabase Auth + Cookie

@@ -188,7 +188,7 @@ for each row execute function set_updated_at();
 
 ## 6. 権限制御（RLS / API層）
 
-DB は **Neon** または **Deno Deploy の Prisma Postgres** を想定する。
+DB は **Deno Deploy の Prisma Postgres** を想定する。
 
 - 基本方針：v0.1 は **API 層で必ず `user_id` によるスコープ制限**を実施する
 - Postgres の RLS は将来的に導入可能（ただし JWT を DB 側に伝搬し `current_setting` 等で判定する設計が必要になるため、v0.1 では必須にしない）
@@ -205,4 +205,3 @@ DB は **Neon** または **Deno Deploy の Prisma Postgres** を想定する。
 4. **related_log_id の参照方式**：`learning_log_entries.id`（uuid）を直接参照。複合キー（themeId + date）による参照は行わない
 
 以上を DB 設計（Final v0.1）とする。
-

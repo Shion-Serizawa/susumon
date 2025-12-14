@@ -5,6 +5,8 @@
  * 本番環境では絶対に使用しないこと。
  */
 
+import process from 'node:process';
+
 export interface MockUser {
   id: string;
   email: string;
@@ -21,17 +23,34 @@ export const MOCK_USER: MockUser = {
 };
 
 /**
+ * 環境変数を取得（Deno/Node 両対応）
+ */
+function getEnv(key: string): string | undefined {
+  // Deno 環境（`Deno` グローバルは型環境によって存在しないため、globalThis 経由で安全に参照する）
+  const deno = (globalThis as { Deno?: { env?: { get?: (k: string) => string | undefined } } })
+    .Deno;
+  const denoValue = deno?.env?.get?.(key);
+  if (denoValue !== undefined) return denoValue;
+
+  // Node.js 環境
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key];
+  }
+  return undefined;
+}
+
+/**
  * 環境変数で開発モードかどうかを判定
  */
 export function isDevMode(): boolean {
-  return Deno.env.get('DEV_MODE') === 'true' || Deno.env.get('NODE_ENV') === 'development';
+  return getEnv('DEV_MODE') === 'true' || getEnv('NODE_ENV') === 'development';
 }
 
 /**
  * モック認証が有効かどうか
  */
 export function isMockAuthEnabled(): boolean {
-  return Deno.env.get('USE_MOCK_AUTH') === 'true';
+  return getEnv('USE_MOCK_AUTH') === 'true';
 }
 
 /**
@@ -43,7 +62,7 @@ export function getMockUser(): MockUser {
     throw new Error('Mock auth is not enabled. Set USE_MOCK_AUTH=true in .env');
   }
 
-  if (Deno.env.get('NODE_ENV') === 'production') {
+  if (getEnv('NODE_ENV') === 'production') {
     throw new Error('Mock auth cannot be used in production!');
   }
 

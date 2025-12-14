@@ -29,23 +29,11 @@ export const handle: Handle = async ({ event, resolve }) => {
     return resolve(event);
   }
 
-  try {
-    // TODO: Supabase Client で JWT を検証
-    // const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-    // if (error) throw error;
-    // event.locals.user = {
-    //   id: user.id,
-    //   email: user.email,
-    //   username: user.user_metadata?.preferred_username || user.email
-    // };
-
-    // 暫定: モックユーザーを返す（本実装後に削除）
-    console.warn('[Auth] Supabase auth not implemented yet, using mock user');
-    event.locals.user = getMockUser();
-  } catch (error) {
-    console.error('[Auth] Failed to verify token:', error);
-    event.locals.user = null;
-  }
+  // NOTE:
+  // ここから先は Supabase Auth の実装が入るまで「未認証扱い」で固定する。
+  // USE_MOCK_AUTH=false なのにモックユーザーへフォールバックすると、本番での誤認証リスクになるため。
+  console.warn('[Auth] Supabase auth not implemented yet; treating request as unauthenticated');
+  event.locals.user = null;
 
   return resolve(event);
 };

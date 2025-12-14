@@ -8,8 +8,8 @@ Learning Log / Meta Note アプリの開発環境を構築する手順。
 
 - **Deno**: v2.60 以上（[インストール](https://deno.land/manual/getting_started/installation)）
 - **Git**: バージョン管理
-- **Node.js**: v18 以上（Prisma CLI用）
-- **PostgreSQL**: v14 以上（ローカル開発用、または Neon アカウント）
+- **Node.js**: v18 以上（任意。入れておくと周辺ツールが楽なことがあります）
+- **PostgreSQL**: v14 以上（ローカル開発用）
 
 ---
 
@@ -25,7 +25,7 @@ cd susumon
 ## 2. 前提ソフトウェアのインストール
 
 ### 必須
-- **Deno**: v1.40 以上
+- **Deno**: v2.60 以上
   ```bash
   # インストール（まだの場合）
   # macOS/Linux
@@ -39,15 +39,11 @@ cd susumon
   - [Docker Desktop](https://www.docker.com/products/docker-desktop/) をインストール
 
 ### オプション
-- **Node.js**: v18以上（Prisma CLI用、なくても可）
-  ```bash
-  # Prisma CLI をグローバルインストール（推奨）
-  npm install -g prisma
-  ```
+- **Node.js**: v18以上（なくても可）
 
 ### 確認
 ```bash
-deno --version     # deno 1.40.0 以上
+deno --version     # deno 2.60.0 以上
 docker --version   # Docker version 24.0.0 以上
 docker compose version  # Docker Compose version v2.20.0 以上
 ```
@@ -59,7 +55,7 @@ docker compose version  # Docker Compose version v2.20.0 以上
 **初めての場合は、この1コマンドで全自動セットアップ**:
 
 ```bash
-make setup
+deno task setup
 ```
 
 これで以下がすべて実行されます:
@@ -78,9 +74,8 @@ make setup
 ### 4.1 依存関係のインストール
 
 ```bash
-# Deno の依存関係は自動解決されるため、npm install 不要
-# ただし Prisma CLI は Node.js 経由で使用（オプション）
-npm install -g prisma
+# Prisma CLI は `deno task db:*` で実行できます（グローバルインストール不要）
+# Node系ツールを使う場合のみ `npm install` を実行してください
 ```
 
 ### 4.2 環境変数の設定
@@ -137,19 +132,19 @@ APP_ORIGIN="http://localhost:5173"
 
 ```bash
 # 1. PostgreSQL を Docker で起動
-make db-up
+deno task db:up
 
 # または
 docker compose up -d postgres
 
 # 2. マイグレーションを実行
-make db-migrate
+deno task db:migrate
 
 # または
 deno task db:migrate:dev
 
 # 3. Prisma Studio（DB GUI）で確認
-make db-studio
+deno task db:studio
 
 # または
 deno task db:studio
@@ -205,9 +200,6 @@ deno task db:migrate:dev
 
 ```bash
 # すべてのデータを削除して再構築
-make db-reset
-
-# または
 deno task db:reset
 ```
 
@@ -218,7 +210,7 @@ deno task db:reset
 ## 5. 開発サーバーの起動
 
 ```bash
-# SvelteKit 開発サーバー
+# SvelteKit 開発サーバー（内部で Prisma Client 生成も実行）
 deno task dev
 ```
 
@@ -285,8 +277,8 @@ deno task format
 詳細は `docs/setup/MCP_SETUP.md` を参照。
 
 必須:
-- **Neon**: データベース管理
 - **GitHub**: PR・Issue 管理
+ - （DB 管理は基本 `Prisma Studio` を使用）
 
 推奨:
 - **Context7**: 最新ドキュメント検索

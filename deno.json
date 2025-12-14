@@ -1,0 +1,51 @@
+{
+  "tasks": {
+    "vite": "deno run -A npm:vite@7",
+    "svelte-kit": "deno run -A npm:@sveltejs/kit@2",
+    "svelte-check": "deno run -A npm:svelte-check@4",
+    "vitest": "deno run -A npm:vitest@4",
+    "playwright": "deno run -A npm:playwright@1",
+    "dev": "deno task db:generate && deno task vite -- dev",
+    "build": "deno task db:generate && deno task vite -- build",
+    "preview": "deno task vite -- preview",
+    "prepare": "deno task svelte-kit -- sync",
+    "check": "deno task svelte-kit -- sync && deno task svelte-check -- --tsconfig ./tsconfig.json",
+    "check:watch": "deno task svelte-kit -- sync && deno task svelte-check -- --tsconfig ./tsconfig.json --watch",
+    "test:unit": "deno task vitest",
+    "test": "deno task test:unit -- --run && deno task test:e2e",
+    "test:e2e": "deno task playwright -- test",
+    "prisma": "deno run -A --env-file=.env npm:prisma@7",
+    "db:generate": "deno task prisma -- generate",
+    "db:migrate:dev": "deno task prisma -- migrate dev",
+    "db:migrate:deploy": "deno task prisma -- migrate deploy",
+    "db:migrate:status": "deno task prisma -- migrate status",
+    "db:reset": "deno task prisma -- migrate reset",
+    "db:migrate": "deno task db:migrate:dev",
+    "db:push": "deno task prisma -- db push",
+    "db:studio": "deno task prisma -- studio",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "setup": "deno run -A scripts/setup.ts",
+    "clean": "deno run -A scripts/clean.ts",
+    "typecheck": "deno task check",
+    "lint": "echo 'Linting not configured yet'",
+    "format": "echo 'Formatting not configured yet'"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"],
+    "allowJs": true,
+    "checkJs": true,
+    "strict": true
+  },
+  "imports": {
+    "$lib": "./src/lib/index.ts",
+    "$lib/": "./src/lib/",
+
+    "@deno/svelte-adapter": "npm:@deno/svelte-adapter@^0.1.0",
+    "@sveltejs/vite-plugin-svelte": "npm:@sveltejs/vite-plugin-svelte@^6.2.1",
+    "@sveltejs/kit": "npm:@sveltejs/kit@^2.49.1",
+
+    "@std/path": "jsr:@std/path@1.1.3"
+  },
+  "nodeModulesDir": "auto"
+}

@@ -1,8 +1,8 @@
-# Deno Deploy + SvelteKit 構築時の注意点（2025年版）
+# Deno Deploy + SvelteKit 開発ガイド（2025年版）
 
-最終更新: 2025-12-13
+最終更新: 2025-12-14
 
-本ドキュメントは、Deno Deploy 上で SvelteKit アプリケーションを構築する際の、最新バージョン（2025年12月時点）における注意点をまとめたものです。
+本ドキュメントは、Deno Deploy 上で SvelteKit + Svelte 5 + Prisma 7 を使用してアプリケーションを開発する際の技術情報と注意点をまとめたものです。
 
 ---
 
@@ -975,16 +975,13 @@ const result = await prisma.$queryRaw`
 - [Build a SvelteKit App - Deno Docs](https://docs.deno.com/examples/svelte_tutorial/)
 - [Building a SvelteKit app with sv and Deno](https://docs.deno.com/examples/sveltekit_tutorial/)
 - [Deno 2 Announcement](https://deno.com/blog/v2.0)
-- [Deno 1.x to 2.x Migration Guide](https://docs.deno.com/runtime/reference/migration_guide/)
 - [Node and npm Compatibility - Deno](https://docs.deno.com/runtime/fundamentals/node/)
-- [Svelte 5 Migration Guide](https://svelte.dev/docs/svelte/v5-migration-guide)
-- [SvelteKit Adapters Documentation](https://svelte.dev/docs/kit/adapters)
+- [Svelte 5 Documentation](https://svelte.dev/docs/svelte)
+- [SvelteKit Documentation](https://kit.svelte.dev/docs)
 
 ### アダプター
 
-- [GitHub - denoland/svelte-adapter](https://github.com/denoland/svelte-adapter) (公式)
-- [GitHub - dbushell/sveltekit-adapter-deno](https://github.com/dbushell/sveltekit-adapter-deno)
-- [GitHub - pluvial/svelte-adapter-deno](https://github.com/pluvial/svelte-adapter-deno)
+- [@deno/svelte-adapter - GitHub](https://github.com/denoland/svelte-adapter) (公式)
 - [@deno/svelte-adapter - npm](https://www.npmjs.com/package/@deno/svelte-adapter)
 
 ### Prisma 関連ドキュメント
@@ -1005,12 +1002,6 @@ const result = await prisma.$queryRaw`
 - [SvelteKit and generated types - denoland/deno#28599](https://github.com/denoland/deno/issues/28599)
 - [Prisma Deno support preview feature - prisma/prisma#15844](https://github.com/prisma/prisma/issues/15844)
 
-### 記事・チュートリアル
-
-- [Build a SvelteKit App with Deno 2 - Tim Kuehne](https://timokuehne.com/articles/sveltekit-with-deno-2)
-- [SvelteKit and Deno with OAuth and Deploy - David Bushell](https://dbushell.com/2023/06/26/sveltekit-oauth-deno-deploy/)
-- [What's new in Svelte: September 2025](https://svelte.dev/blog/whats-new-in-svelte-september-2025)
-- [Deno 2 Arrives With Long-Term Support, npm Compatibility - The New Stack](https://thenewstack.io/deno-2-arrives-with-long-term-support-node-js-compatibility/)
 
 ---
 

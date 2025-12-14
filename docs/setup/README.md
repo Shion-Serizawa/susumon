@@ -101,7 +101,7 @@
 - 前提条件（Deno, PostgreSQL, Node.js）
 - リポジトリクローン〜依存関係インストール
 - 環境変数設定（`.env`, Supabase, GitHub OAuth）
-- データベースセットアップ（Neon or ローカル PostgreSQL）
+- データベースセットアップ（Deno Deploy Prisma Postgres / ローカル PostgreSQL）
 - 開発サーバー起動・動作確認
 - Claude Code 設定（MCP, Skills, コマンド）
 - 開発ワークフロー
