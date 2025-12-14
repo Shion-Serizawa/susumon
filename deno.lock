@@ -13,6 +13,7 @@
     "npm:@tailwindcss/vite@^4.1.17": "4.1.18_vite@7.2.7__@types+node@22.19.3__picomatch@4.0.3_@types+node@22.19.3",
     "npm:@types/node@^22.10.5": "22.19.3",
     "npm:@vitest/browser-playwright@^4.0.15": "4.0.15_playwright@1.57.0_vitest@4.0.15__@types+node@22.19.3__@vitest+browser-playwright@4.0.15__playwright@1.57.0__vite@7.2.7___@types+node@22.19.3___picomatch@4.0.3_vite@7.2.7__@types+node@22.19.3__picomatch@4.0.3_@types+node@22.19.3",
+    "npm:playwright@1": "1.57.0",
     "npm:playwright@^1.57.0": "1.57.0",
     "npm:prisma@7": "7.1.0_typescript@5.9.3",
     "npm:svelte-check@4": "4.3.4_svelte@5.46.0__acorn@8.15.0_typescript@5.9.3",
