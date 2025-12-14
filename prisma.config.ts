@@ -1,9 +1,9 @@
 import { defineConfig, env } from 'prisma/config';
-import { join } from '@std/path';
+import path from 'node:path';
 
 export default defineConfig({
 	engine: 'classic',
-	schema: join('prisma', 'schema.prisma'),
-	migrations: { path: join('prisma', 'migrations') },
+	schema: path.join('prisma', 'schema.prisma'),
+	migrations: { path: path.join('prisma', 'migrations') },
 	datasource: { url: env('DATABASE_URL') }
 });
