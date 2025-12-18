@@ -37,7 +37,7 @@
 | **GitHub** | PR・Issue・CI/CD 管理 | 必須 |
 | **Context7** | 最新ドキュメント検索 | 推奨 |
 | **Serena** | セマンティックなコード編集 | 推奨 |
-| **Playwright** | E2E テスト | 推奨 |
+| （未導入） | E2E テスト | - |
 
 
 詳細: `docs/setup/MCP_SETUP.md`

@@ -60,7 +60,7 @@ import { Pool } from "npm:pg@8";
 
 - **Web フレームワーク**: Next.js, Astro, Remix, Qwik, Solid, SvelteKit
 - **データベースクライアント**: mysql2, pg, pglite, duckdb, sqlite3
-- **その他**: @grpc/grpc-js, playwright, @google-cloud/*, ssh2, esbuild
+- **その他**: @grpc/grpc-js, @google-cloud/*, ssh2, esbuild
 
 ### 2.3 Node-API アドオン対応
 

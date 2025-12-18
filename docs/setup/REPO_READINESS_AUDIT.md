@@ -131,7 +131,7 @@
 
 ## 実行系（ツールチェーン）まわりの注意
 
-- ✅ `deno.json` の `vite` / `vitest` / `playwright` / `prisma` は `deno run npm:<pkg>@<major>` 経由で実行するように統一済み（グローバル Node / バイナリ依存を避ける）  
+- ✅ `deno.json` の `vite` / `vitest` / `prisma` は `deno run npm:<pkg>@<major>` 経由で実行するように統一済み（グローバル Node / バイナリ依存を避ける）  
   - 参照: `deno.json:2`
 - ⚠️ 初回は npm 互換の依存ダウンロードが走るため、ネットワーク制限環境では詰まりポイントになり得る
 - `package.json` の scripts も同様に存在し、**deno と npm の二重導線**になっている  
@@ -141,13 +141,7 @@
 - `Makefile` は POSIX シェル前提のコマンド（`if [ ... ]`, `cp`, `sleep`, `read -p`, `rm -rf`）を含む  
   - 参照: `Makefile:33`、`Makefile:35`、`Makefile:43`、`Makefile:72`、`Makefile:109`  
   - Windows でそのまま `make setup` を叩くと環境によっては動かない（Git Bash / WSL の前提整理が必要）
-- ✅ Playwright の `webServer.command` は `deno task build && deno task preview` に統一済み  
-  - 参照: `playwright.config.ts:4`
-
-### 追記（現状）
-
-- ✅ 公式導線は `deno task` に統一（Playwright の `webServer.command` も `deno task` に変更）  
-  - 参照: `playwright.config.ts:4`
+- E2E は v0.1 では未導入
 - ✅ `Makefile` 相当の操作は `deno task setup`, `deno task db:up`, `deno task db:down`, `deno task clean` などに寄せた  
   - 参照: `deno.json:1`, `scripts/setup.ts:1`, `scripts/clean.ts:1`
 
@@ -157,7 +151,7 @@
 
 - Deno の推奨は「HTTP import より `jsr:` / `npm:` を使う」方向（Std は JSR 側に移行しつつある）
 - このリポジトリは現状 Deno Std をほぼ使っていないため、今すぐの置換は不要（今後入れるなら `deno add jsr:@std/...@^1` を採用）
-- SvelteKit / Prisma / Playwright などは npm エコシステムなので、`deno run npm:<pkg>@<major>` 方針で問題ない
+- SvelteKit / Prisma などは npm エコシステムなので、`deno run npm:<pkg>@<major>` 方針で問題ない
 
 ---
 
@@ -166,7 +160,7 @@
 ### 2025-12-14
 
 - リポジトリの全体構造を確認し、セットアップ文書・タスク・Prisma/認証まわりの矛盾点を一次抽出。
-- 明確に直せるズレを修正（`deno task` への導線統一、`scripts/setup.ts` / `scripts/clean.ts` 追加、`playwright.config.ts` の `webServer.command` 統一、`@deno/svelte-adapter` のバージョン修正、Prisma 命名の整理、`MetaNoteCategory` の enum 化、Prisma 7.1+ 対応の `prisma.config.ts` 追加、`src/app.d.ts` の `Locals` 追加、`hooks.server.ts` の危険なフォールバック削除、`docs/setup/DEVELOPMENT_SETUP.md` 更新、`README.md` 更新）。
+- 明確に直せるズレを修正（`deno task` への導線統一、`scripts/setup.ts` / `scripts/clean.ts` 追加、`@deno/svelte-adapter` のバージョン修正、Prisma 命名の整理、`MetaNoteCategory` の enum 化、Prisma 7.1+ 対応の `prisma.config.ts` 追加、`src/app.d.ts` の `Locals` 追加、`hooks.server.ts` の危険なフォールバック削除、`docs/setup/DEVELOPMENT_SETUP.md` 更新、`README.md` 更新）。
 
 ---
 

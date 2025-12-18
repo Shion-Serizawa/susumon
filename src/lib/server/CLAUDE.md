@@ -285,7 +285,7 @@ console.error(JSON.stringify({
 ### TEST-1 (MUST): Three Layers
 1. Unit (Vitest)
 2. Integration (Vitest)
-3. E2E (Playwright)
+3. E2E（v0.1 未導入）
 
 Coverage: 80%+ for business logic
 

@@ -184,16 +184,8 @@ export const load: PageLoad = async ({ fetch }) => {
 
 ## Testing (推奨)
 
-### Playwright E2E
-```typescript
-test('create theme', async ({ page }) => {
-  await page.goto('/themes');
-  await page.click('[data-testid="create-btn"]');
-  await page.fill('input[name="name"]', 'Test');
-  await expect(page.locator('text=Test')).toBeVisible();
-});
-```
-- `data-testid` でセレクタ安定化
+### E2E
+- v0.1 は未導入
 
 ---
 

@@ -244,9 +244,6 @@ deno task test
 
 # 特定のテストファイル
 deno task test src/routes/api/themes/+server.test.ts
-
-# E2E テスト（Playwright）
-deno task test:e2e
 ```
 
 ---
@@ -283,7 +280,7 @@ deno task format
 推奨:
 - **Context7**: 最新ドキュメント検索
 - **Brave Search**: Web 検索
-- **Playwright**: E2E テスト
+- （v0.1 未導入）E2E テスト
 
 ### 9.3 カスタム Skills のインストール
 
@@ -298,7 +295,6 @@ deno task format
 # 利用可能なコマンド
 /review          # コードレビュー
 /spec-check      # 仕様との整合性チェック
-/test-e2e        # E2E テスト実行
 /deploy-prep     # デプロイ準備チェック
 ```
 

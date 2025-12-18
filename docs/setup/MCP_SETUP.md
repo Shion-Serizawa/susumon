@@ -46,19 +46,9 @@ claude mcp add --transport http context7 https://mcp.context7.dev/mcp
 
 ---
 
-### 3. **Playwright (E2Eテスト)**
+### 3. **E2E テスト**
 
-ブラウザ自動化・E2E テストの作成・実行。
-
-```bash
-# インストール
-claude mcp add --transport stdio playwright -- npx -y @playwright/mcp
-```
-
-**用途**:
-- ログイン〜ログアウトフローのテスト
-- フォーム送信・バリデーションのテスト
-- レスポンシブ UI の確認
+- v0.1 では未導入
 
 ---
 
@@ -244,7 +234,7 @@ cat .env | grep DATABASE_URL
 
 1. **GitHub**: PR/Issue 管理（必須）
 2. **Context7**: ドキュメント検索（推奨）
-3. **Playwright**: E2Eテスト（推奨）
+3. **E2E テスト**: v0.1 では未導入
 
 ### オプション
 
