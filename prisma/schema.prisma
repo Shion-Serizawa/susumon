@@ -4,8 +4,9 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
-  runtime  = "deno" // REQUIRED for Deno Deploy + Prisma 7
+  output   = "../.prisma/client"
+  // v7 uses 'client' engine with adapter (required for Deno Deploy)
+  engineType = "client"
 }
 
 datasource db {
