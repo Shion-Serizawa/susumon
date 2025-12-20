@@ -56,3 +56,6 @@ generated/
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# MCP
+/.serena
