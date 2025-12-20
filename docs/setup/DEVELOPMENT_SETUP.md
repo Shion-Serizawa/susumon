@@ -349,7 +349,7 @@ deno task db:reset
 ### 問題: Deno Deploy でビルドエラー
 
 1. `deno.json` の `compilerOptions.lib` に `["deno.window", "dom"]` が含まれているか確認
-2. `@sveltejs/adapter-deno` が最新版か確認
+2. `@deno/svelte-adapter` が最新版か確認
 3. `docs/tech/deno_deploy_sveltekit_注意点_2025.md` を参照
 
 ---
@@ -364,4 +364,4 @@ deno task db:reset
 
 ---
 
-セットアップが完了したら、`/spec-check` で仕様との整合性を確認してから開発を開始することを推奨します。
+セットアップが完了したら、`/spec-check`（Claude Code のスラッシュコマンド）で仕様との整合性を確認してから開発を開始することを推奨します。

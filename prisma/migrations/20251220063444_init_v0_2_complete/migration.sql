@@ -62,7 +62,7 @@ CREATE TABLE "learning_log_entries" (
     "date" DATE NOT NULL,
     "summary" TEXT NOT NULL,
     "details" TEXT,
-    "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "tags" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
     "state" "ResourceState" NOT NULL DEFAULT 'ACTIVE',
     "state_changed_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
