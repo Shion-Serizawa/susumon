@@ -29,6 +29,7 @@ coverage/
 # Build output
 /.svelte-kit
 /build
+/.deno-deploy
 
 # OS
 .DS_Store
