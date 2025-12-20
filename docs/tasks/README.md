@@ -1,14 +1,17 @@
-# タスク計画 - 学習ログ/メタノートアプリ (v0.1)
+# タスク計画 - 学習ログ/メタノートアプリ (v0.2)
 
 このディレクトリには、プロジェクトの段階的な開発タスク計画が含まれています。
+
+**⚠️ v0.2アップデート**: DB設計の大幅な改善（State Machine、中間テーブル化、PostgreSQL 17）を実施しました。詳細は [CHANGELOG_v0.2.md](../spec/CHANGELOG_v0.2.md) を参照してください。
 
 ## 📋 タスク計画ドキュメント
 
 | Phase | ドキュメント | 目的 | 前提条件 | 並列実行 |
 |-------|------------|------|---------|---------|
 | **Phase 0** | [00_環境構築.md](./00_環境構築.md) | 開発環境とインフラ基盤の構築 | なし | - |
-| **Phase 1-BE** | [01_バックエンド開発.md](./01_バックエンド開発.md) | REST API実装 | Phase 0 完了 | ✅ Phase 1-FE と並列可 |
-| **Phase 1-FE** | [02_フロントエンド開発.md](./02_フロントエンド開発.md) | UI/UXコンポーネント実装 | Phase 0 完了 | ✅ Phase 1-BE と並列可 |
+| **Phase 0.5** | [00.5_v0.2_DB変更対応.md](./00.5_v0.2_DB変更対応.md) | 🔴 v0.2 DB変更対応 | Phase 0 完了 | - |
+| **Phase 1-BE** | [01_バックエンド開発.md](./01_バックエンド開発.md) | REST API実装 | Phase 0.5 完了 | ✅ Phase 1-FE と並列可 |
+| **Phase 1-FE** | [02_フロントエンド開発.md](./02_フロントエンド開発.md) | UI/UXコンポーネント実装 | Phase 0.5 完了 | ✅ Phase 1-BE と並列可 |
 
 ---
 
@@ -17,15 +20,20 @@
 ```
 Phase 0: 環境構築
     ↓
+Phase 0.5: v0.2 DB変更対応 🔴 (新規追加)
+    ├─ マイグレーション実行
+    ├─ 型定義更新
+    └─ Prisma Client Extensions設定
+    ↓
     ├─→ Phase 1-BE: バックエンド開発 (並列)
     │       ├─ Theme API
-    │       ├─ LearningLog API
-    │       └─ MetaNote API
+    │       ├─ LearningLog API (state管理追加)
+    │       └─ MetaNote API (category英語化、中間テーブル対応)
     │
     └─→ Phase 1-FE: フロントエンド開発 (並列)
             ├─ Theme UI
             ├─ LearningLog UI
-            └─ MetaNote UI
+            └─ MetaNote UI (category表示対応)
 ```
 
 ---
@@ -51,6 +59,31 @@ Phase 0: 環境構築
 
 ---
 
+### Phase 0.5: v0.2 DB変更対応 🔴
+
+**目的**: v0.1からv0.2のDB設計変更に対応
+
+**主なタスク**:
+- PostgreSQL 17への移行
+- Prismaマイグレーション実行
+- State Machine方式の論理削除対応
+- category英語化対応
+- 中間テーブル（meta_note_themes）対応
+- 型定義ファイル更新
+- Prisma Client Extensions設定
+
+**完了条件**:
+- ✅ マイグレーション成功
+- ✅ Prisma Client生成成功
+- ✅ 型チェックエラーなし
+- ✅ Prisma Client Extensionsが機能
+
+**所要時間**: 約0.5-1日
+
+**詳細**: [00.5_v0.2_DB変更対応.md](./00.5_v0.2_DB変更対応.md)
+
+---
+
 ### Phase 1-BE: バックエンド開発
 
 **目的**: REST APIエンドポイントの実装とビジネスロジックの構築
@@ -60,9 +93,12 @@ Phase 0: 環境構築
 - **LearningLog API** (5タスク): CRUD操作 + 制約処理
 - **MetaNote API** (5タスク): CRUD操作 + noteDate自動生成
 
-**実装規約**:
-- ユーザースコープ制限必須（`userId` フィルタ）
-- UUID v7 生成（アプリ側）
+**実装規約 (v0.2更新)**:
+- ユーザースコープ制限必須（Prisma Client Extensionsで自動チェック）
+- ~~UUID v7 生成（アプリ側）~~ → DB側で自動生成
+- State Machine方式の削除（`state = 'DELETED'`）
+- category値は英語キー（INSIGHT/QUESTION/EMOTION）
+- MetaNoteのthemeIdsは中間テーブルで管理
 - カーソルページネーション
 - 統一エラーフォーマット
 
@@ -203,6 +239,7 @@ GitHub Projects や Jira を使用して可視化も可能。
 ### セットアップガイド
 
 - [開発環境セットアップ](../setup/DEVELOPMENT_SETUP.md)
+- [マイグレーションガイド v0.1→v0.2](../setup/MIGRATION_v0.1_to_v0.2.md) 🆕
 - [モック認証](../setup/MOCK_AUTH.md)
 - [MCPサーバー設定](../setup/MCP_SETUP.md)
 
@@ -238,9 +275,10 @@ GitHub Projects や Jira を使用して可視化も可能。
    - すべてのAPIクエリに `where: { userId: locals.user.id }` を含める
    - データ越境を防ぐ
 
-2. **UUID v7 生成**
-   - Prismaは自動生成しない
-   - 必ずアプリ側で `uuidv7()` を呼ぶ
+2. **UUID v7 生成 (v0.2更新)**
+   - ~~アプリ側で生成~~ → DB側で自動生成（カスタム関数）
+   - `@default(dbgenerated("uuid_v7()"))`
+   - RFC 9562準拠の関数実装
 
 3. **Svelte 5 構文**
    - `export let` は使わない → `$props()` を使用
@@ -283,8 +321,12 @@ claude --permission-mode plan
 ## 🎯 次のステップ
 
 1. **Phase 0 (環境構築)** から開始
-2. Phase 0 完了後、**Phase 1-BE** と **Phase 1-FE** を並列実行
-3. 各セクション完了後、統合テストを実施
-4. 全Phase完了後、デプロイ準備（`.claude/commands/deploy-prep.md`）
+2. 🔴 **Phase 0.5 (v0.2 DB変更対応)** を実施 - **必須！**
+   - マイグレーション実行
+   - 型定義確認
+   - Prisma Client Extensions動作確認
+3. Phase 0.5 完了後、**Phase 1-BE** と **Phase 1-FE** を並列実行
+4. 各セクション完了後、統合テストを実施
+5. 全Phase完了後、デプロイ準備（`.claude/commands/deploy-prep.md`）
 
 **Let's build! 🚀**

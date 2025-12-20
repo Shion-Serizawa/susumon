@@ -1,6 +1,13 @@
-# Learning Log / Meta Note アプリ DB設計（Final v0.1）
+# Learning Log / Meta Note アプリ DB設計（Final v0.2）
 
-本ドキュメントは、技術仕様（Draft v0.1）に基づき、PostgreSQL の論理/物理設計（DDL）を定義する。
+本ドキュメントは、技術仕様（Final v0.1）に基づき、PostgreSQL の論理/物理設計（DDL）を定義する。
+
+**v0.2の主な変更:**
+- PostgreSQL 17のネイティブ`uuid_v7()`を使用したDB側採番
+- 論理削除をState Machine方式（ResourceState enum）に変更
+- MetaNoteのcategoryを英語キー（TEXT + CHECK制約）に変更
+- theme_ids配列を中間テーブル（meta_note_themes）に正規化
+- Timestamptz(6)をTimestamptzに統一
 
 ---
 
@@ -12,7 +19,7 @@ v0.1 実装を安定して進めるために、現状まだ未作成（または
 2. **デプロイ設計（Deno Deploy）**：単一リポジトリのビルド/デプロイ手順、環境変数、preview環境、secret管理の具体手順。
 3. **認証実装詳細**：Supabase Auth（GitHub OAuth）のコールバックURL、セッション保持（cookie/local）方針、CSR/SSR時の扱い。
 4. **RLS/権限制御設計**：Supabase を採用する場合、Row Level Security の有無、適用範囲、API側での担保との切り分け。
-5. **CSV Export 仕様**：列定義、エクスポート単位、配列フィールドの表現（`;`）は確定済みだが、文字エスケープや改行/引用符ルール、日付/時刻フォーマットが未確定。
+5. **CSV Export 仕様**：列定義、エクスポート単位、エスケープや改行/引用符ルール、日付/時刻フォーマットが未確定。
 6. **運用ポリシー**：バックアップ、リストア、監視（最低限のログ）、データ削除（物理/論理）の採用判断。
 
 本ドキュメントでは、まず DB スキーマを確定させる。
@@ -25,29 +32,36 @@ v0.1 実装を安定して進めるために、現状まだ未作成（または
 - 認証は Supabase Auth（GitHub OAuth）を想定し、`user_id` は **Supabase の `auth.users.id`（uuid）** を格納する（JWT の subject に相当）
 - UI日付（`date`, `note_date`）は JST のローカル日付。DB では `DATE` として保持する（タイムゾーン変換はしない）
 - `created_at`/`updated_at` は `timestamptz`（UTC想定）
-- **v0.1 は物理削除を採用**。`deleted_at` カラムは定義するが、初期実装では使用しない（将来的に論理削除へ移行可能）
+- **v0.2 は State Machine による論理削除を採用**。`state` カラム（ACTIVE/ARCHIVED/DELETED）で状態管理
+- **PostgreSQL 17以降を使用**（ネイティブ`uuid_v7()`関数を利用）
 
 ---
 
 ## 2. 推奨拡張
 
 ```sql
--- UUID生成
-create extension if not exists pgcrypto;
-
--- UUIDv7 は Postgres 標準関数では生成しない前提（アプリ側で生成してINSERTする）
--- ※ 将来、DB側でUUIDv7生成が必要になった場合は拡張/関数導入を別途検討する
+-- PostgreSQL 17+ では uuid_v7() が標準で利用可能
+-- 拡張のインストールは不要
 ```
 
 ---
 
 ## 3. テーブル定義（DDL）
 
-### 3.1 themes
+### 3.1 リソース状態管理（ENUM）
+
+```sql
+-- リソースの状態を管理するENUM型
+create type resource_state as enum ('ACTIVE', 'ARCHIVED', 'DELETED');
+```
+
+---
+
+### 3.2 themes
 
 ```sql
 create table if not exists themes (
-  id uuid primary key, -- UUIDv7（アプリ側で生成）
+  id uuid primary key default uuid_v7(),
   user_id uuid not null, -- Supabase auth.users.id
 
   name text not null,
@@ -55,29 +69,32 @@ create table if not exists themes (
   goal text not null,
   is_completed boolean not null default false,
 
+  state resource_state not null default 'ACTIVE',
+  state_changed_at timestamptz not null default now(),
+
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  deleted_at timestamptz
+  updated_at timestamptz not null default now()
 );
 
--- user_id 単体の検索は (user_id, is_completed) の左端プレフィックスで賄えるため、基本はこの1本で開始
+-- マルチテナント境界 + 完了状態検索
 create index if not exists idx_themes_user_completed on themes(user_id, is_completed);
 
--- もし user_id のみで頻繁に検索し、かつ is_completed を参照しないクエリが多くボトルネックになる場合のみ追加
--- create index if not exists idx_themes_user_id on themes(user_id);
+-- 状態管理用インデックス
+create index if not exists idx_themes_user_state on themes(user_id, state);
 ```
 
 **備考**
 - `short_name` が NULL の場合、UI 側で `...` 表示
-- `deleted_at` は v0.1 では使用しない（物理削除を採用）。将来の論理削除移行に備えて定義のみ
+- `state` で論理削除を管理（ACTIVE: 通常、ARCHIVED: アーカイブ、DELETED: 削除済み）
+- アプリケーション層では通常 `state != 'DELETED'` でフィルタリング
 
 ---
 
-### 3.2 learning_log_entries
+### 3.3 learning_log_entries
 
 ```sql
 create table if not exists learning_log_entries (
-  id uuid primary key, -- UUIDv7（アプリ側で生成）
+  id uuid primary key default uuid_v7(),
   user_id uuid not null, -- Supabase auth.users.id
 
   theme_id uuid not null references themes(id) on delete cascade,
@@ -88,15 +105,23 @@ create table if not exists learning_log_entries (
 
   tags text[] not null default array[]::text[],
 
+  state resource_state not null default 'ACTIVE',
+  state_changed_at timestamptz not null default now(),
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  deleted_at timestamptz,
 
   constraint uq_log_per_day unique (user_id, theme_id, date)
 );
 
+-- 日付範囲検索用（追加）
 create index if not exists idx_logs_user_date on learning_log_entries(user_id, date);
+
+-- テーマ別ログ検索用
 create index if not exists idx_logs_user_theme_date on learning_log_entries(user_id, theme_id, date);
+
+-- 状態管理用インデックス
+create index if not exists idx_logs_user_state on learning_log_entries(user_id, state);
 
 -- tags 検索用（将来）
 create index if not exists gin_logs_tags on learning_log_entries using gin (tags);
@@ -105,47 +130,69 @@ create index if not exists gin_logs_tags on learning_log_entries using gin (tags
 **備考**
 - 「1日1テーマ1ログ」を DB 制約（`uq_log_per_day`）で担保
 - tags は v0.1 では UI 最小（または非表示）だが、DB に保持
-- `deleted_at` は v0.1 では使用しない（物理削除を採用）
+- `state` で論理削除を管理
 
 ---
 
-### 3.3 meta_notes
+### 3.4 meta_notes
 
 ```sql
 create table if not exists meta_notes (
-  id uuid primary key, -- UUIDv7（アプリ側で生成）
+  id uuid primary key default uuid_v7(),
   user_id uuid not null, -- Supabase auth.users.id
 
   category text not null,
   body text not null,
 
-  -- 関連テーマ（0..N）。未設定は「雑記」扱い
-  theme_ids uuid[] not null default array[]::uuid[],
-
-  -- 関連ログ（任意）：DB内部では learning_log_entries.id を参照するのが安全
+  -- 関連ログ（任意）
   related_log_id uuid references learning_log_entries(id) on delete set null,
 
   note_date date not null,
 
+  state resource_state not null default 'ACTIVE',
+  state_changed_at timestamptz not null default now(),
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  deleted_at timestamptz,
 
-  constraint chk_meta_category check (category in ('気づき', '疑問', '感情'))
+  constraint chk_meta_category check (category in ('INSIGHT', 'QUESTION', 'EMOTION'))
 );
 
 create index if not exists idx_notes_user_date on meta_notes(user_id, note_date);
 create index if not exists idx_notes_user_category_date on meta_notes(user_id, category, note_date);
-
--- theme_ids を含む検索（将来）
-create index if not exists gin_notes_theme_ids on meta_notes using gin (theme_ids);
+create index if not exists idx_notes_user_state on meta_notes(user_id, state);
 ```
 
 **備考**
+- `category` は英語キー（'INSIGHT', 'QUESTION', 'EMOTION'）をDB値として使用
+  - UI表示: INSIGHT→「気づき」、QUESTION→「疑問」、EMOTION→「感情」
+  - 国際化対応が容易（アプリ側で翻訳テーブル管理）
 - `note_date` は UI 上の JST ローカル日付（自由入力不可、サーバー側で自動生成）
 - `related_log_id` は「日次ログ画面にそのまま書く」要件を自然に満たす
-- `theme_ids` は配列で保持（v0.1 の実装を簡単にする）。将来、高度な検索・整合性が必要なら中間テーブル化を検討
-- `deleted_at` は v0.1 では使用しない（物理削除を採用）
+- `state` で論理削除を管理
+
+---
+
+### 3.5 meta_note_themes（中間テーブル）
+
+```sql
+-- MetaNote <-> Theme の多対多リレーション
+create table if not exists meta_note_themes (
+  meta_note_id uuid not null references meta_notes(id) on delete cascade,
+  theme_id uuid not null references themes(id) on delete cascade,
+  created_at timestamptz not null default now(),
+
+  primary key (meta_note_id, theme_id)
+);
+
+-- テーマ側からの検索用
+create index if not exists idx_meta_note_themes_theme_id on meta_note_themes(theme_id);
+```
+
+**備考**
+- v0.1の配列型（theme_ids uuid[]）を正規化
+- 参照整合性をDB制約で保証
+- テーマが削除されると自動的に関連レコードも削除（CASCADE）
 
 ---
 
@@ -176,13 +223,26 @@ before update on meta_notes
 for each row execute function set_updated_at();
 ```
 
+**備考**
+- Prismaの`@updatedAt`はPrisma経由の更新のみ有効
+- 直接SQLで更新する場合に備えてトリガーも定義
+
 ---
 
 ## 5. CSV Export における表現
 
-- `tags` / `theme_ids` は CSV では **1カラムに `;` 区切り**で出力
+- `tags` は CSV では **1カラムに `;` 区切り**で出力
   - 例：`array_to_string(tags, ';')`
-  - 例：`array_to_string(theme_ids::text[], ';')`
+- `meta_note_themes` は結合して出力
+  - 例：
+  ```sql
+  select array_to_string(
+    array_agg(t.name order by t.name), ';'
+  ) as theme_names
+  from meta_note_themes mnt
+  join themes t on t.id = mnt.theme_id
+  where mnt.meta_note_id = $1
+  ```
 
 ---
 
@@ -191,17 +251,68 @@ for each row execute function set_updated_at();
 DB は **Deno Deploy の Prisma Postgres** を想定する。
 
 - 基本方針：v0.1 は **API 層で必ず `user_id` によるスコープ制限**を実施する
+  - Prisma Client Extensionsで自動的に`userId`の存在をチェック
+  - さらに`state != 'DELETED'`を自動付与
 - Postgres の RLS は将来的に導入可能（ただし JWT を DB 側に伝搬し `current_setting` 等で判定する設計が必要になるため、v0.1 では必須にしない）
+- 直接SQLでクエリを実行する場合はマルチテナント境界を手動で確認する必要がある
 
 （RLS を採用する場合の具体ポリシーは別ドキュメントで確定する）
 
 ---
 
-## 7. 確定事項（v0.1）
+## 7. 確定事項（v0.2）
 
 1. **`user_id` 型**：uuid（Supabase `auth.users.id`）で確定
-2. **削除方針**：物理削除を採用。`deleted_at` カラムは将来の論理削除移行に備えて定義するが、v0.1 では使用しない
-3. **theme_ids の保持方法**：配列型（uuid[]）で保持。将来、クエリパフォーマンスや整合性要件が厳しくなった場合に中間テーブル化を検討
-4. **related_log_id の参照方式**：`learning_log_entries.id`（uuid）を直接参照。複合キー（themeId + date）による参照は行わない
+2. **削除方針**：State Machine方式を採用。`state` カラム（resource_state enum）で管理
+3. **theme_ids の保持方法**：中間テーブル（meta_note_themes）で正規化
+4. **related_log_id の参照方式**：`learning_log_entries.id`（uuid）を直接参照
+5. **UUID生成**：PostgreSQL 17の`uuid_v7()`をDB側で使用
+6. **Timestamptz精度**：明示的な精度指定なし（PostgreSQLデフォルトの6桁マイクロ秒）
+7. **category値**：英語キー（'INSIGHT', 'QUESTION', 'EMOTION'）、UI側で多言語対応
 
-以上を DB 設計（Final v0.1）とする。
+---
+
+## 8. マイグレーション戦略（v0.1→v0.2）
+
+既存データがない場合は新規作成で問題ないが、既存データがある場合：
+
+```sql
+-- 1. 新しいENUM型を作成
+CREATE TYPE resource_state AS ENUM ('ACTIVE', 'ARCHIVED', 'DELETED');
+
+-- 2. 各テーブルに新カラム追加
+ALTER TABLE themes
+  ADD COLUMN state resource_state NOT NULL DEFAULT 'ACTIVE',
+  ADD COLUMN state_changed_at timestamptz NOT NULL DEFAULT now();
+
+-- 3. deleted_at から state へ移行（既存データがある場合）
+UPDATE themes SET state = 'DELETED' WHERE deleted_at IS NOT NULL;
+
+-- 4. 旧カラム削除
+ALTER TABLE themes DROP COLUMN deleted_at;
+
+-- 5. category値の変換（meta_notes）
+UPDATE meta_notes SET category =
+  CASE category
+    WHEN '気づき' THEN 'INSIGHT'
+    WHEN '疑問' THEN 'QUESTION'
+    WHEN '感情' THEN 'EMOTION'
+  END;
+
+-- 6. 中間テーブル作成と配列からの移行
+CREATE TABLE meta_note_themes (
+  meta_note_id uuid NOT NULL REFERENCES meta_notes(id) ON DELETE CASCADE,
+  theme_id uuid NOT NULL REFERENCES themes(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (meta_note_id, theme_id)
+);
+
+-- theme_ids配列から中間テーブルへデータ移行
+INSERT INTO meta_note_themes (meta_note_id, theme_id)
+SELECT id, unnest(theme_ids) FROM meta_notes WHERE array_length(theme_ids, 1) > 0;
+
+-- 旧カラム削除
+ALTER TABLE meta_notes DROP COLUMN theme_ids;
+```
+
+以上を DB 設計（Final v0.2）とする。

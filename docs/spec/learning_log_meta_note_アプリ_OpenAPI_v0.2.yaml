@@ -1,0 +1,753 @@
+openapi: 3.1.0
+info:
+  title: Learning Log / Meta Note API
+  version: 0.2.0
+  description: |
+    個人学習の継続と振り返りを目的とした個人用ログ管理アプリケーションのREST API (v0.2)
+
+    **v0.2の主な変更:**
+    - State Machine方式の論理削除（ACTIVE/ARCHIVED/DELETED）
+    - MetaNoteのcategoryを英語キー化（INSIGHT/QUESTION/EMOTION）
+    - theme_ids配列を中間テーブル（meta_note_themes）に正規化
+    - UUIDv7のDB側採番（PostgreSQL 17）
+
+servers:
+  - url: /api
+    description: Local development / Production
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase Auth access token
+
+  schemas:
+    # ===== Common =====
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Error code (e.g., BadRequest, NotFound, Unauthorized)
+            message:
+              type: string
+              description: Human-readable error message
+            details:
+              type: object
+              additionalProperties: true
+              description: Optional additional error details
+
+    ResourceState:
+      type: string
+      enum: [ACTIVE, ARCHIVED, DELETED]
+      description: |
+        Resource state for State Machine soft delete
+        - ACTIVE: Normal state
+        - ARCHIVED: Archived (future use)
+        - DELETED: Soft deleted (filtered by default)
+
+    MetaNoteCategory:
+      type: string
+      enum: [INSIGHT, QUESTION, EMOTION]
+      description: |
+        Meta note category (English keys for i18n)
+        - INSIGHT: 気づき
+        - QUESTION: 疑問
+        - EMOTION: 感情
+
+    # ===== Theme =====
+
+    Theme:
+      type: object
+      required: [id, name, goal, isCompleted, state, stateChangedAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUIDv7 (DB-generated)
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        shortName:
+          type: string
+          nullable: true
+          maxLength: 50
+        goal:
+          type: string
+          minLength: 1
+        isCompleted:
+          type: boolean
+        state:
+          $ref: '#/components/schemas/ResourceState'
+        stateChangedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ThemeCreate:
+      type: object
+      required: [name, goal]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        shortName:
+          type: string
+          nullable: true
+          maxLength: 50
+        goal:
+          type: string
+          minLength: 1
+        isCompleted:
+          type: boolean
+          default: false
+
+    ThemePatch:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        shortName:
+          type: string
+          nullable: true
+          maxLength: 50
+        goal:
+          type: string
+          minLength: 1
+        isCompleted:
+          type: boolean
+
+    # ===== LearningLogEntry =====
+
+    LearningLogEntry:
+      type: object
+      required: [id, themeId, date, summary, tags, state, stateChangedAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        themeId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          description: JST local date (YYYY-MM-DD)
+        summary:
+          type: string
+          minLength: 1
+        details:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        state:
+          $ref: '#/components/schemas/ResourceState'
+        stateChangedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    LearningLogCreate:
+      type: object
+      required: [themeId, date, summary]
+      properties:
+        themeId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          description: JST local date (YYYY-MM-DD)
+        summary:
+          type: string
+          minLength: 1
+        details:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          default: []
+
+    LearningLogPatch:
+      type: object
+      properties:
+        summary:
+          type: string
+          minLength: 1
+        details:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+
+    # ===== MetaNote =====
+
+    MetaNote:
+      type: object
+      required: [id, category, body, noteDate, state, stateChangedAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          $ref: '#/components/schemas/MetaNoteCategory'
+        body:
+          type: string
+          minLength: 1
+        relatedLogId:
+          type: string
+          format: uuid
+          nullable: true
+        noteDate:
+          type: string
+          format: date
+          description: JST local date (auto-generated at creation)
+        state:
+          $ref: '#/components/schemas/ResourceState'
+        stateChangedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    MetaNoteWithThemes:
+      allOf:
+        - $ref: '#/components/schemas/MetaNote'
+        - type: object
+          required: [themes]
+          properties:
+            themes:
+              type: array
+              items:
+                type: object
+                required: [id, name]
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+
+    MetaNoteCreate:
+      type: object
+      required: [category, body]
+      properties:
+        category:
+          $ref: '#/components/schemas/MetaNoteCategory'
+        body:
+          type: string
+          minLength: 1
+        themeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          default: []
+          description: Will be stored in meta_note_themes table
+        relatedLogId:
+          type: string
+          format: uuid
+          nullable: true
+      # noteDate is auto-generated server-side (JST current date)
+
+    MetaNotePatch:
+      type: object
+      properties:
+        category:
+          $ref: '#/components/schemas/MetaNoteCategory'
+        body:
+          type: string
+          minLength: 1
+        themeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Will update meta_note_themes table (replace all)
+        relatedLogId:
+          type: string
+          format: uuid
+          nullable: true
+
+    # ===== Pagination =====
+
+    PaginatedThemes:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Theme'
+        nextCursor:
+          type: string
+          nullable: true
+          description: Base64-encoded cursor for next page
+
+    PaginatedLogs:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LearningLogEntry'
+        nextCursor:
+          type: string
+          nullable: true
+
+    PaginatedNotes:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetaNoteWithThemes'
+        nextCursor:
+          type: string
+          nullable: true
+
+    ActivityMap:
+      type: object
+      additionalProperties:
+        type: integer
+        minimum: 0
+      description: |
+        Map of date (YYYY-MM-DD) to activity count
+        Example: { "2025-01-15": 3, "2025-01-16": 1 }
+
+paths:
+  # ===== Auth =====
+
+  /auth/session:
+    get:
+      summary: Get current session
+      operationId: getAuthSession
+      security: []
+      responses:
+        '200':
+          description: Session information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authenticated:
+                    type: boolean
+                  user:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+
+  # ===== Themes =====
+
+  /themes:
+    get:
+      summary: List themes
+      operationId: listThemes
+      parameters:
+        - name: includeCompleted
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: includeArchived
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include ARCHIVED state (v0.2)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedThemes'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Create theme
+      operationId: createTheme
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Theme'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /themes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      summary: Get theme by ID
+      operationId: getTheme
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Theme'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      summary: Update theme
+      operationId: updateTheme
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemePatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Theme'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete theme (soft delete)
+      operationId: deleteTheme
+      description: Sets state to DELETED (v0.2)
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ===== Learning Logs =====
+
+  /logs:
+    get:
+      summary: List learning logs
+      operationId: listLogs
+      parameters:
+        - name: themeId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLogs'
+
+    post:
+      summary: Create learning log
+      operationId: createLog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearningLogCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningLogEntry'
+        '409':
+          description: Conflict (duplicate for same theme/date)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /logs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      summary: Get log by ID
+      operationId: getLog
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningLogEntry'
+
+    patch:
+      summary: Update log
+      operationId: updateLog
+      requestBody:
+        required: true
+        content:
+          application/json:
+              schema:
+                $ref: '#/components/schemas/LearningLogPatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningLogEntry'
+
+    delete:
+      summary: Delete log (soft delete)
+      operationId: deleteLog
+      responses:
+        '204':
+          description: No Content
+
+  # ===== Meta Notes =====
+
+  /notes:
+    get:
+      summary: List meta notes
+      operationId: listNotes
+      parameters:
+        - name: category
+          in: query
+          schema:
+            $ref: '#/components/schemas/MetaNoteCategory'
+        - name: themeId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by related theme (via meta_note_themes)
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotes'
+
+    post:
+      summary: Create meta note
+      operationId: createNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetaNoteCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetaNoteWithThemes'
+
+  /notes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      summary: Get note by ID
+      operationId: getNote
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetaNoteWithThemes'
+
+    patch:
+      summary: Update note
+      operationId: updateNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetaNotePatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetaNoteWithThemes'
+
+    delete:
+      summary: Delete note (soft delete)
+      operationId: deleteNote
+      responses:
+        '204':
+          description: No Content
+
+  # ===== Activity =====
+
+  /activity:
+    get:
+      summary: Get activity map for contribution heatmap
+      operationId: getActivity
+      parameters:
+        - name: start
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityMap'
