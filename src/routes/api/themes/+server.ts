@@ -1,6 +1,10 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { prisma } from '$lib/server/db';
+import type { Prisma } from '@prisma/client';
+import type { ThemeCursor } from '$lib/server/api-types';
+import { validateLimit, validateThemeCreate } from '$lib/server/validation';
+import { decodeCursor, buildPaginatedResponse } from '$lib/server/pagination';
 
 /**
  * GET /api/themes
@@ -14,6 +18,8 @@ import { prisma } from '$lib/server/db';
  * Response:
  * - 200: { items: Theme[], nextCursor: string | null }
  * - 401: Unauthorized
+ * - 400: BadRequest
+ * - 500: InternalServerError
  */
 export const GET: RequestHandler = async ({ locals, url }) => {
 	// 認証チェック
@@ -30,34 +36,21 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	const cursorParam = url.searchParams.get('cursor');
 
 	// limit のバリデーション
-	const limit = limitParam ? parseInt(limitParam, 10) : 50;
-	if (limit < 1 || limit > 200 || isNaN(limit)) {
-		return json(
-			{
-				error: {
-					code: 'BadRequest',
-					message: 'limit must be between 1 and 200'
-				}
-			},
-			{ status: 400 }
-		);
+	const limitResult = validateLimit(limitParam);
+	if (limitResult.error) {
+		return json(limitResult.error, { status: 400 });
 	}
+	const limit = limitResult.value;
 
 	// cursor のデコード
-	let cursorData: { createdAt: string; id: string } | null = null;
-	if (cursorParam) {
-		try {
-			cursorData = JSON.parse(atob(cursorParam));
-		} catch (error) {
-			return json(
-				{ error: { code: 'BadRequest', message: 'Invalid cursor format' } },
-				{ status: 400 }
-			);
-		}
+	const cursorResult = decodeCursor<ThemeCursor>(cursorParam);
+	if (cursorResult.error) {
+		return json(cursorResult.error, { status: 400 });
 	}
+	const cursorData = cursorResult.data;
 
-	// WHERE 句の構築
-	const where: any = {
+	// WHERE 句の構築（型安全）
+	const where: Prisma.ThemeWhereInput = {
 		userId: locals.user.id // ユーザースコープ制限（必須）
 		// Prisma Client Extensions が自動的に state != 'DELETED' を追加
 	};
@@ -92,27 +85,86 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			take: limit + 1
 		});
 
-		// nextCursor の生成
-		let nextCursor: string | null = null;
-		if (themes.length > limit) {
-			const lastItem = themes[limit - 1];
-			nextCursor = btoa(
-				JSON.stringify({
-					createdAt: lastItem.createdAt.toISOString(),
-					id: lastItem.id
-				})
-			);
-			themes.pop(); // 余分な1件を削除
-		}
+		// ページネーション結果の構築
+		const { items, nextCursor } = buildPaginatedResponse(themes, limit, (theme) => ({
+			createdAt: theme.createdAt.toISOString(),
+			id: theme.id
+		}));
 
 		return json({
-			items: themes,
+			items,
 			nextCursor
 		});
 	} catch (error) {
 		console.error('[GET /api/themes] Database error:', error);
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Database query failed' } },
+			{ status: 500 }
+		);
+	}
+};
+
+/**
+ * POST /api/themes
+ * テーマを作成
+ *
+ * Request Body (JSON):
+ * - name: string (required) - テーマ名
+ * - goal: string (required) - 目標
+ * - shortName: string | null (optional) - 短縮名
+ * - isCompleted: boolean (optional, default: false) - 完了フラグ
+ *
+ * Response:
+ * - 201: Created - Theme オブジェクト
+ * - 400: BadRequest - バリデーションエラー
+ * - 401: Unauthorized - 認証エラー
+ * - 500: InternalServerError - サーバーエラー
+ */
+export const POST: RequestHandler = async ({ locals, request }) => {
+	// 認証チェック
+	if (!locals.user) {
+		return json(
+			{ error: { code: 'Unauthorized', message: 'Authentication required' } },
+			{ status: 401 }
+		);
+	}
+
+	// リクエストボディの取得
+	let body: unknown;
+	try {
+		body = await request.json();
+	} catch (error) {
+		return json(
+			{ error: { code: 'BadRequest', message: 'Invalid JSON body' } },
+			{ status: 400 }
+		);
+	}
+
+	// バリデーション
+	const validationResult = validateThemeCreate(body);
+	if (validationResult.error) {
+		return json(validationResult.error, { status: 400 });
+	}
+
+	const themeData = validationResult.data!;
+
+	try {
+		// テーマ作成（IDはDB側でuuid_v7()により自動生成）
+		const theme = await prisma.theme.create({
+			data: {
+				userId: locals.user.id,
+				name: themeData.name,
+				goal: themeData.goal,
+				...(themeData.shortName !== undefined && { shortName: themeData.shortName }),
+				...(themeData.isCompleted !== undefined && { isCompleted: themeData.isCompleted })
+			}
+		});
+
+		return json(theme, { status: 201 });
+	} catch (error) {
+		console.error('[POST /api/themes] Database error:', error);
+		return json(
+			{ error: { code: 'InternalServerError', message: 'Failed to create theme' } },
 			{ status: 500 }
 		);
 	}
