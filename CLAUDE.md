@@ -37,6 +37,8 @@ susumon/
 │   │   └── (app)/               # UI ページ (+page.svelte)
 │   ├── lib/
 │   │   ├── server/              # サーバー専用コード
+│   │   │   ├── services/        # ビジネスロジック層
+│   │   │   │   └── theme.service.ts
 │   │   │   ├── db.ts            # Prisma Client (拡張済み)
 │   │   │   ├── api-types.ts    # API共通型定義
 │   │   │   ├── validation.ts   # バリデーション共通関数
@@ -128,6 +130,12 @@ susumon/
   - ページネーション: `src/lib/server/pagination.ts` (`decodeCursor`, `buildPaginatedResponse` 等)
   - 型定義: `src/lib/server/api-types.ts` (カーソル型、エラー型 等)
   - 参考実装: `src/routes/api/themes/+server.ts`
+
+- **C-8 (MUST)**: サービス層でビジネスロジックを分離
+  - ハンドラー (`+server.ts`): 認証・バリデーション・サービス呼び出しのみ
+  - サービス層 (`src/lib/server/services/`): ビジネスロジック・DB操作
+  - メリット: ロジック再利用、テスト容易性、保守性向上
+  - 参考実装: `src/lib/server/services/theme.service.ts`
 
 ### Testing (T)
 
@@ -264,6 +272,7 @@ deno task test               # すべてのテスト
 
 ## Version History
 
+- **2025-01-XX**: サービス層の導入（ビジネスロジック分離、保守性向上）
 - **2025-01-XX**: 共通ライブラリ整備（型安全性強化、バリデーション・ページネーション共通化）
 - **2025-01-XX**: v0.2 DB設計大幅改善（State Machine、中間テーブル、PostgreSQL 17）
 - **2025-01-XX**: v0.1 仕様確定、CLAUDE.md 初版作成
