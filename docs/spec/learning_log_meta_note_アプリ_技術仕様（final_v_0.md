@@ -74,7 +74,7 @@ v0.2 では一覧系に **カーソル方式** を採用する。
 openapi: 3.1.0
 info:
   title: Learning Log / Meta Note API
-  version: 0.1.0
+  version: 0.2.0
 servers:
   - url: /api
 security:

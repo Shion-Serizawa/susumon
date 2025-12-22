@@ -36,9 +36,15 @@ susumon/
 │   │   ├── api/                 # API エンドポイント (+server.ts)
 │   │   └── (app)/               # UI ページ (+page.svelte)
 │   ├── lib/
-│   │   ├── server/              # サーバー専用コード（DB, auth）
+│   │   ├── server/              # サーバー専用コード
+│   │   │   ├── db.ts            # Prisma Client (拡張済み)
+│   │   │   ├── api-types.ts    # API共通型定義
+│   │   │   ├── validation.ts   # バリデーション共通関数
+│   │   │   ├── pagination.ts   # ページネーション共通関数
+│   │   │   └── test-utils.ts   # テストユーティリティ
 │   │   ├── components/          # Svelte コンポーネント
 │   │   └── types/               # TypeScript 型定義
+│   ├── tests/                   # 自動テスト (Vitest)
 │   └── hooks.server.ts          # SvelteKit フック（認証）
 ├── prisma/
 │   ├── schema.prisma            # Prisma スキーマ
@@ -106,7 +112,22 @@ susumon/
   - logs: `{date, createdAt, id}` (降順)
   - notes: `{noteDate, createdAt, id}` (降順)
 
-- **C-6 (SHOULD)**: 型安全性を優先（Prisma型を活用、`any` は避ける）
+- **C-6 (MUST)**: 型安全性を優先（`any` は避ける）
+  ```typescript
+  // Good - Prisma生成型を使用
+  const where: Prisma.ThemeWhereInput = { userId: locals.user.id };
+
+  // Bad - 型安全性を失う
+  const where: any = { userId: locals.user.id };
+  ```
+  - Prisma生成型（`Prisma.ThemeWhereInput` 等）を活用
+  - 共通ライブラリ（`src/lib/server/`）の型定義を参照
+
+- **C-7 (MUST)**: 共通ライブラリを活用（DRY原則）
+  - バリデーション: `src/lib/server/validation.ts` (`validateLimit` 等)
+  - ページネーション: `src/lib/server/pagination.ts` (`decodeCursor`, `buildPaginatedResponse` 等)
+  - 型定義: `src/lib/server/api-types.ts` (カーソル型、エラー型 等)
+  - 参考実装: `src/routes/api/themes/+server.ts`
 
 ### Testing (T)
 
@@ -147,7 +168,8 @@ deno task lint
 deno task format
 
 # テスト
-deno task test
+deno task test:unit          # ユニット・統合テスト (Vitest)
+deno task test               # すべてのテスト
 ```
 
 ---
@@ -222,6 +244,8 @@ deno task test
 
 - 認証フロー図: `docs/spec/learning_log_meta_note_アプリ_技術仕様（final_v_0.md:695`
 
+- テストガイド: `src/tests/README.md` - 自動テストの実行方法とベストプラクティス
+
 ---
 
 ## Out of Scope (v0.2)
@@ -240,5 +264,6 @@ deno task test
 
 ## Version History
 
+- **2025-01-XX**: 共通ライブラリ整備（型安全性強化、バリデーション・ページネーション共通化）
 - **2025-01-XX**: v0.2 DB設計大幅改善（State Machine、中間テーブル、PostgreSQL 17）
 - **2025-01-XX**: v0.1 仕様確定、CLAUDE.md 初版作成
