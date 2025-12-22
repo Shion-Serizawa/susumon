@@ -1,10 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { prisma } from '$lib/server/db';
-import type { Prisma } from '@prisma/client';
 import type { ThemeCursor } from '$lib/server/api-types';
 import { validateLimit, validateThemeCreate } from '$lib/server/validation';
-import { decodeCursor, buildPaginatedResponse } from '$lib/server/pagination';
+import { decodeCursor } from '$lib/server/pagination';
+import { themeService } from '$lib/server/services/theme.service';
 
 /**
  * GET /api/themes
@@ -49,52 +48,16 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	}
 	const cursorData = cursorResult.data;
 
-	// WHERE 句の構築（型安全）
-	const where: Prisma.ThemeWhereInput = {
-		userId: locals.user.id // ユーザースコープ制限（必須）
-		// Prisma Client Extensions が自動的に state != 'DELETED' を追加
-	};
-
-	// isCompleted フィルタ
-	if (!includeCompleted) {
-		where.isCompleted = false;
-	}
-
-	// カーソルによる範囲指定
-	if (cursorData) {
-		where.OR = [
-			{
-				createdAt: {
-					gt: new Date(cursorData.createdAt)
-				}
-			},
-			{
-				createdAt: new Date(cursorData.createdAt),
-				id: {
-					gt: cursorData.id
-				}
-			}
-		];
-	}
-
+	// サービス呼び出し
 	try {
-		// limit + 1 件取得して nextCursor の有無を判定
-		const themes = await prisma.theme.findMany({
-			where,
-			orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-			take: limit + 1
+		const result = await themeService.listThemes({
+			userId: locals.user.id,
+			includeCompleted,
+			limit,
+			cursorData
 		});
 
-		// ページネーション結果の構築
-		const { items, nextCursor } = buildPaginatedResponse(themes, limit, (theme) => ({
-			createdAt: theme.createdAt.toISOString(),
-			id: theme.id
-		}));
-
-		return json({
-			items,
-			nextCursor
-		});
+		return json(result);
 	} catch (error) {
 		console.error('[GET /api/themes] Database error:', error);
 		return json(
@@ -148,16 +111,11 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 	const themeData = validationResult.data!;
 
+	// サービス呼び出し
 	try {
-		// テーマ作成（IDはDB側でuuid_v7()により自動生成）
-		const theme = await prisma.theme.create({
-			data: {
-				userId: locals.user.id,
-				name: themeData.name,
-				goal: themeData.goal,
-				...(themeData.shortName !== undefined && { shortName: themeData.shortName }),
-				...(themeData.isCompleted !== undefined && { isCompleted: themeData.isCompleted })
-			}
+		const theme = await themeService.createTheme({
+			userId: locals.user.id,
+			...themeData
 		});
 
 		return json(theme, { status: 201 });
