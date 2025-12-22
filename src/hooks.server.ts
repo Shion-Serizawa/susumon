@@ -7,6 +7,16 @@
 import type { Handle } from '@sveltejs/kit';
 import { isMockAuthEnabled, getMockUser } from '$lib/server/auth-mock';
 
+function getEnv(key: string): string | undefined {
+	const deno = (globalThis as { Deno?: { env?: { get?: (k: string) => string | undefined } } }).Deno;
+	const denoValue = deno?.env?.get?.(key);
+	if (denoValue !== undefined) return denoValue;
+
+	// Node.js fallback (local dev tooling)
+	const process = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
+	return process?.env?.[key];
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
   // モック認証が有効な場合
   if (isMockAuthEnabled()) {
@@ -21,7 +31,8 @@ export const handle: Handle = async ({ event, resolve }) => {
   // 2. Supabase でトークン検証
   // 3. locals.user を設定
 
-  const accessToken = event.cookies.get('sb-access-token');
+  const cookieName = getEnv('AUTH_COOKIE_NAME') ?? 'sb-auth-token';
+  const accessToken = event.cookies.get(cookieName);
 
   if (!accessToken) {
     // 未認証
