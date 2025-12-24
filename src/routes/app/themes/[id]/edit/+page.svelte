@@ -24,7 +24,7 @@
 
 <div class="mx-auto max-w-2xl">
   <div class="mb-6">
-    <h1 class="text-2xl font-semibold">Edit Theme</h1>
+    <h1 class="text-2xl font-semibold">テーマ編集</h1>
     <p class="text-sm text-gray-600">{data.theme.name}</p>
   </div>
 
@@ -36,7 +36,7 @@
 
   <form method="POST" use:enhance class="space-y-4">
     <div>
-      <label class="block text-sm font-medium text-gray-900" for="name">Name</label>
+      <label class="block text-sm font-medium text-gray-900" for="name">名称</label>
       <input
         id="name"
         name="name"
@@ -54,7 +54,7 @@
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-gray-900" for="shortName">Short name (optional)</label>
+      <label class="block text-sm font-medium text-gray-900" for="shortName">略称（任意）</label>
       <input
         id="shortName"
         name="shortName"
@@ -71,7 +71,7 @@
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-gray-900" for="goal">Goal</label>
+      <label class="block text-sm font-medium text-gray-900" for="goal">目標</label>
       <textarea
         id="goal"
         name="goal"
@@ -100,18 +100,17 @@
           isCompleted = (e.currentTarget as HTMLInputElement).checked;
         }}
       />
-      <label for="isCompleted" class="text-sm text-gray-900">Completed</label>
+      <label for="isCompleted" class="text-sm text-gray-900">達成済み</label>
     </div>
 
     <div class="flex items-center justify-end gap-3 pt-2">
-      <a href={`/app/themes/${data.theme.id}`} class="text-sm text-gray-700 hover:underline">Cancel</a>
+      <a href={`/app/themes/${data.theme.id}`} class="text-sm text-gray-700 hover:underline">キャンセル</a>
       <button
         type="submit"
         class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
       >
-        Save
+        保存
       </button>
     </div>
   </form>
 </div>
-

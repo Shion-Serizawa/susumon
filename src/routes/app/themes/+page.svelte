@@ -67,9 +67,9 @@
         const contentType = res.headers.get('content-type') ?? '';
         if (contentType.includes('application/json')) {
           const body = (await res.json()) as ApiErrorResponse;
-          loadError = body?.error?.message ?? `Failed to load (${res.status})`;
+          loadError = body?.error?.message ?? `読み込みに失敗しました（${res.status}）`;
         } else {
-          loadError = `Failed to load (${res.status})`;
+          loadError = `読み込みに失敗しました（${res.status}）`;
         }
         return;
       }
@@ -78,7 +78,7 @@
       items = [...items, ...body.items];
       nextCursor = body.nextCursor;
     } catch (e) {
-      loadError = e instanceof Error ? e.message : 'Failed to load';
+      loadError = e instanceof Error ? e.message : '読み込みに失敗しました';
     } finally {
       isLoadingMore = false;
     }
@@ -111,20 +111,20 @@
 <div class="mx-auto max-w-4xl">
   <div class="mb-6 flex items-start justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-semibold">Themes</h1>
-      <p class="text-sm text-gray-600">Manage your learning themes.</p>
+      <h1 class="text-2xl font-semibold">テーマ</h1>
+      <p class="text-sm text-gray-600">学習テーマを管理します。</p>
     </div>
     <a
       href="/app/themes/new"
       class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
     >
-      New Theme
+      新規作成
     </a>
   </div>
 
   {#if source === 'mock'}
     <div class="mb-6 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-      Theme API is not implemented yet. Showing mock data so you can continue UI work.
+      Theme API が未実装のため、モックデータを表示しています（UI開発用）。
     </div>
   {/if}
 
@@ -139,7 +139,7 @@
           updateQuery({ includeCompleted, includeArchived });
         }}
       />
-      Include completed
+      達成済みを含める
     </label>
 
     <label class="inline-flex items-center gap-2 text-sm">
@@ -152,13 +152,13 @@
           updateQuery({ includeCompleted, includeArchived });
         }}
       />
-      Include archived
+      アーカイブを含める
     </label>
   </div>
 
   {#if items.length === 0}
     <div class="rounded-md border border-dashed p-6 text-center text-sm text-gray-600">
-      No themes yet.
+      テーマがまだありません。
     </div>
   {:else}
     <div class="grid gap-3">
@@ -184,7 +184,7 @@
                 <span class="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{theme.state}</span>
               {/if}
               {#if theme.isCompleted}
-                <span class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-800">Completed</span>
+                <span class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-800">達成済み</span>
               {/if}
             </div>
           </div>
@@ -203,10 +203,10 @@
           onclick={loadMore}
           disabled={isLoadingMore}
         >
-          {isLoadingMore ? 'Loading…' : 'Load more'}
+          {isLoadingMore ? '読み込み中…' : 'さらに読み込む'}
         </button>
       {:else}
-        <div class="text-sm text-gray-500">No more themes.</div>
+        <div class="text-sm text-gray-500">これ以上ありません。</div>
       {/if}
 
       <div bind:this={sentinel} class="h-1 w-full" />

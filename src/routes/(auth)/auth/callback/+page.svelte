@@ -4,8 +4,8 @@
 </script>
 
 <div class="callback-container">
-  <h1>Authenticating...</h1>
-  <p>Please wait while we complete your login.</p>
+  <h1>認証中…</h1>
+  <p>ログイン処理を完了しています。しばらくお待ちください。</p>
 </div>
 
 <style>

@@ -22,8 +22,8 @@
 
 <div class="mx-auto max-w-2xl">
   <div class="mb-6">
-    <h1 class="text-2xl font-semibold">New Theme</h1>
-    <p class="text-sm text-gray-600">Create a new learning theme.</p>
+    <h1 class="text-2xl font-semibold">テーマ作成</h1>
+    <p class="text-sm text-gray-600">新しい学習テーマを作成します。</p>
   </div>
 
   {#if formError}
@@ -34,7 +34,7 @@
 
   <form method="POST" use:enhance class="space-y-4">
     <div>
-      <label class="block text-sm font-medium text-gray-900" for="name">Name</label>
+      <label class="block text-sm font-medium text-gray-900" for="name">名称</label>
       <input
         id="name"
         name="name"
@@ -52,7 +52,7 @@
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-gray-900" for="shortName">Short name (optional)</label>
+      <label class="block text-sm font-medium text-gray-900" for="shortName">略称（任意）</label>
       <input
         id="shortName"
         name="shortName"
@@ -69,7 +69,7 @@
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-gray-900" for="goal">Goal</label>
+      <label class="block text-sm font-medium text-gray-900" for="goal">目標</label>
       <textarea
         id="goal"
         name="goal"
@@ -88,12 +88,12 @@
     </div>
 
     <div class="flex items-center justify-end gap-3 pt-2">
-      <a href="/app/themes" class="text-sm text-gray-700 hover:underline">Cancel</a>
+      <a href="/app/themes" class="text-sm text-gray-700 hover:underline">キャンセル</a>
       <button
         type="submit"
         class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
       >
-        Create
+        作成
       </button>
     </div>
   </form>

@@ -35,7 +35,7 @@ async function readErrorMessage(response: Response): Promise<string> {
       // ignore
     }
   }
-  return response.statusText || "Request failed";
+  return response.statusText || "リクエストに失敗しました";
 }
 
 export const load: PageLoad = async ({ fetch, url }) => {
@@ -72,7 +72,7 @@ export const load: PageLoad = async ({ fetch, url }) => {
   }
 
   if (!contentType.includes("application/json")) {
-    throw error(502, "Unexpected response from /api/themes");
+    throw error(502, "想定外のレスポンスです（/api/themes）");
   }
 
   if (!response.ok) {

@@ -38,7 +38,8 @@ async function readApiErrorMessage(response: Response): Promise<string> {
       // ignore
     }
   }
-  return response.statusText || `Request failed (${response.status})`;
+  return response.statusText ||
+    `リクエストに失敗しました（${response.status}）`;
 }
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
@@ -60,10 +61,10 @@ export const actions: Actions = {
     const isCompleted = formData.get("isCompleted") === "on";
 
     const fieldErrors: Record<string, string> = {};
-    if (!name) fieldErrors.name = "Name is required.";
-    if (!goal) fieldErrors.goal = "Goal is required.";
+    if (!name) fieldErrors.name = "名称は必須です。";
+    if (!goal) fieldErrors.goal = "目標は必須です。";
     if (shortName && shortName.length > 50) {
-      fieldErrors.shortName = "Short name must be 50 characters or less.";
+      fieldErrors.shortName = "略称は50文字以内にしてください。";
     }
 
     const values = {
