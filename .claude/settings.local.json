@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(test:*)",
-      "Bash(deno task:*)"
+      "Bash(deno task:*)",
+      "Bash(curl:*)",
+      "Bash(docker compose:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)"
     ]
   }
 }

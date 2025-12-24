@@ -1,10 +1,23 @@
-import { PrismaClient } from '../../../generated/prisma/index.ts';
-import { Prisma } from '../../../generated/prisma/index.ts';
+// Prisma v7 with PostgreSQL adapter for Deno Deploy
+import prismaClientPkg from '@prisma/client';
+const { PrismaClient, Prisma } = prismaClientPkg;
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 
 function getDenoEnv(key: string): string | undefined {
 	const deno = (globalThis as { Deno?: { env?: { get?: (k: string) => string | undefined } } })
 		.Deno;
 	return deno?.env?.get?.(key);
+}
+
+function getNodeEnv(key: string): string | undefined {
+	const process = (globalThis as { process?: { env?: Record<string, string | undefined> } })
+		.process;
+	return process?.env?.[key];
+}
+
+function getEnv(key: string): string | undefined {
+	return getDenoEnv(key) ?? getNodeEnv(key);
 }
 
 const isDenoDeploy = Boolean(getDenoEnv('DENO_DEPLOYMENT_ID'));
@@ -13,7 +26,20 @@ const isDenoDeploy = Boolean(getDenoEnv('DENO_DEPLOYMENT_ID'));
  * Prisma Client with multi-tenant boundary protection and state-aware queries
  */
 const createPrismaClient = () => {
-	const client = new PrismaClient();
+	// Get DATABASE_URL from environment
+	const databaseUrl = getEnv('DATABASE_URL');
+	if (!databaseUrl) {
+		throw new Error('DATABASE_URL environment variable is not set');
+	}
+
+	// Create PostgreSQL connection pool
+	const pool = new pg.Pool({ connectionString: databaseUrl });
+
+	// Create Prisma adapter
+	const adapter = new PrismaPg(pool);
+
+	// Initialize Prisma Client with adapter
+	const client = new PrismaClient({ adapter });
 
 	return client.$extends({
 		name: 'multiTenantGuard',

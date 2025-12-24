@@ -45,6 +45,7 @@ Thumbs.db
 # Prisma
 prisma/.env
 generated/
+/.prisma
 
 # Claude Code (user-specific MCP configs may contain secrets)
 .claude/config.json

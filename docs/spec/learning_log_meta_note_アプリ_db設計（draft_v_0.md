@@ -1,9 +1,9 @@
 # Learning Log / Meta Note アプリ DB設計（Final v0.2）
 
-本ドキュメントは、技術仕様（Final v0.1）に基づき、PostgreSQL の論理/物理設計（DDL）を定義する。
+本ドキュメントは、PostgreSQL の論理/物理設計（DDL）を定義する。
 
 **v0.2の主な変更:**
-- PostgreSQL 17のネイティブ`uuid_v7()`を使用したDB側採番
+- UUIDv7のDB側採番（`uuid_v7()`関数）
 - 論理削除をState Machine方式（ResourceState enum）に変更
 - MetaNoteのcategoryを英語キー（TEXT + CHECK制約）に変更
 - theme_ids配列を中間テーブル（meta_note_themes）に正規化
@@ -11,37 +11,33 @@
 
 ---
 
-## 0. 先に明示：現時点で不足しているドキュメント
+## 0. 関連ドキュメント
 
-v0.1 実装を安定して進めるために、現状まだ未作成（または粒度不足）のドキュメントは以下。
-
-1. **API スキーマ（OpenAPI正式版）**：現在は OpenAPI 風の叩き台。型・エラー仕様（4xx/5xx）・pagination・rate limit 等が未確定。
-2. **デプロイ設計（Deno Deploy）**：単一リポジトリのビルド/デプロイ手順、環境変数、preview環境、secret管理の具体手順。
-3. **認証実装詳細**：Supabase Auth（GitHub OAuth）のコールバックURL、セッション保持（cookie/local）方針、CSR/SSR時の扱い。
-4. **RLS/権限制御設計**：Supabase を採用する場合、Row Level Security の有無、適用範囲、API側での担保との切り分け。
-5. **CSV Export 仕様**：列定義、エクスポート単位、エスケープや改行/引用符ルール、日付/時刻フォーマットが未確定。
-6. **運用ポリシー**：バックアップ、リストア、監視（最低限のログ）、データ削除（物理/論理）の採用判断。
-
-本ドキュメントでは、まず DB スキーマを確定させる。
+- OpenAPI: `docs/spec/learning_log_meta_note_アプリ_OpenAPI_v0.2.yaml`
+- 変更ログ: `docs/spec/CHANGELOG_v0.2.md`
+- マイグレーション: `prisma/migrations/`
 
 ---
 
 ## 1. 設計前提
 
-- v0.1 は **ユーザー1名**で利用開始するが、スキーマは **複数ユーザー対応**を前提とする
+- 利用開始は **ユーザー1名**を想定するが、スキーマは **複数ユーザー対応**を前提とする
 - 認証は Supabase Auth（GitHub OAuth）を想定し、`user_id` は **Supabase の `auth.users.id`（uuid）** を格納する（JWT の subject に相当）
 - UI日付（`date`, `note_date`）は JST のローカル日付。DB では `DATE` として保持する（タイムゾーン変換はしない）
 - `created_at`/`updated_at` は `timestamptz`（UTC想定）
 - **v0.2 は State Machine による論理削除を採用**。`state` カラム（ACTIVE/ARCHIVED/DELETED）で状態管理
-- **PostgreSQL 17以降を使用**（ネイティブ`uuid_v7()`関数を利用）
+- **PostgreSQL 17以降を使用**
+  - UUIDv7 は **DB側で `uuid_v7()` 関数により採番**する
+  - `uuid_v7()` は PostgreSQL の組み込み関数ではなく、マイグレーションで定義する（`prisma/migrations/*/migration.sql`）
 
 ---
 
 ## 2. 推奨拡張
 
 ```sql
--- PostgreSQL 17+ では uuid_v7() が標準で利用可能
--- 拡張のインストールは不要
+-- uuid_v7() はマイグレーションで定義する（RFC 9562準拠）
+-- 乱数生成に pgcrypto を使用するため、拡張を有効化する
+create extension if not exists pgcrypto;
 ```
 
 ---

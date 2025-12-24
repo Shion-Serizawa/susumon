@@ -1,6 +1,6 @@
-# Learning Log / Meta Note アプリ 技術仕様（Final v0.1）
+# Learning Log / Meta Note アプリ 技術仕様（Final v0.2）
 
-本ドキュメントは、これまでの議論を基に **技術スタック／OpenAPI（正式版）／デプロイ設計（Deno Deploy）／認証実装詳細（Supabase Auth + GitHub OAuth）** を v0.1 として確定する。
+本ドキュメントは、これまでの議論を基に **技術スタック／OpenAPI／デプロイ設計（Deno Deploy）／認証実装詳細（Supabase Auth + GitHub OAuth）** を v0.2 として確定する。
 
 ---
 
@@ -15,16 +15,18 @@
 - 認証：**Supabase Auth（GitHub OAuth）**
 - ID：
   - `user_id`：Supabase `auth.users.id`（uuid）
-  - その他：UUIDv7（アプリ側生成）
+  - その他：UUIDv7（DB側生成 `uuid_v7()`）
 
 ---
 
-## 2. OpenAPI（正式版 v0.1）
+## 2. OpenAPI（v0.2）
+
+OpenAPI 定義は `docs/spec/learning_log_meta_note_アプリ_OpenAPI_v0.2.yaml` を正とする（本ドキュメント内の YAML は参考）。
 
 ### 2.1 共通ルール
 
 - Base URL：`/api`
-- 認証：Bearer JWT（Supabase Auth の access token）
+- 認証：HttpOnly Cookie（主）／Bearer JWT（任意）
 - Content-Type：`application/json`
 - 日付：JSTのローカル日付を `YYYY-MM-DD`（DBはDATE）
 - `createdAt/updatedAt`：RFC3339（UTC想定）
@@ -53,7 +55,7 @@
 
 ### 2.3 Pagination 方針
 
-v0.1 では一覧系に **カーソル方式** を採用する。
+v0.2 では一覧系に **カーソル方式** を採用する。
 
 - Query
   - `limit`：1..200（default 50）
@@ -72,7 +74,7 @@ v0.1 では一覧系に **カーソル方式** を採用する。
 openapi: 3.1.0
 info:
   title: Learning Log / Meta Note API
-  version: 0.1.0
+  version: 0.2.0
 servers:
   - url: /api
 security:
