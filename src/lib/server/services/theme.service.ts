@@ -79,6 +79,18 @@ export class ThemeService {
 			}
 		});
 	}
+
+	/**
+	 * テーマ詳細を取得
+	 */
+	async getThemeById(params: { userId: string; themeId: string }): Promise<Theme | null> {
+		return prisma.theme.findFirst({
+			where: {
+				userId: params.userId,
+				id: params.themeId
+			}
+		});
+	}
 }
 
 // シングルトンインスタンスをエクスポート

@@ -26,6 +26,14 @@ export interface ValidatedThemeCreate {
 }
 
 /**
+ * UUID パラメータのバリデーション結果
+ */
+export interface ValidatedUuid {
+	value: string;
+	error?: ApiError;
+}
+
+/**
  * limit パラメータをバリデーション
  * @param limitParam - クエリパラメータの値
  * @param defaultValue - デフォルト値（通常50）
@@ -153,4 +161,39 @@ export function validateThemeCreate(body: unknown): ValidatedThemeCreate {
 		},
 		error: undefined
 	};
+}
+
+/**
+ * UUID パラメータをバリデーション
+ * @param value - パラメータ値
+ * @param paramName - パラメータ名（エラーメッセージ用）
+ */
+export function validateUuidParam(value: string | null, paramName = 'id'): ValidatedUuid {
+	if (!value || typeof value !== 'string') {
+		return {
+			value: '',
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: `${paramName} is required`
+				}
+			}
+		};
+	}
+
+	// UUID v1-v8 を許容する緩いチェック（形式のみ）
+	const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+	if (!uuidRegex.test(value)) {
+		return {
+			value: '',
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: `${paramName} must be a valid UUID`
+				}
+			}
+		};
+	}
+
+	return { value };
 }
