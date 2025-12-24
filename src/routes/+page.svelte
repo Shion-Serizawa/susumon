@@ -19,7 +19,7 @@
 </script>
 
 <div class="loading">
-  <p>Loading...</p>
+  <p>読み込み中…</p>
 </div>
 
 <style>

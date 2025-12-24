@@ -1,3 +1,4 @@
-@import 'tailwindcss';
-@plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/typography';
+@import "tailwindcss";
+@source "../lib/**/*.{svelte,ts,js}";
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
