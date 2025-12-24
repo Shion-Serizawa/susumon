@@ -26,6 +26,19 @@ export interface ValidatedThemeCreate {
 }
 
 /**
+ * ThemePatch のバリデーション結果
+ */
+export interface ValidatedThemePatch {
+	data: {
+		name?: string;
+		goal?: string;
+		shortName?: string | null;
+		isCompleted?: boolean;
+	} | null;
+	error?: ApiError;
+}
+
+/**
  * UUID パラメータのバリデーション結果
  */
 export interface ValidatedUuid {
@@ -161,6 +174,116 @@ export function validateThemeCreate(body: unknown): ValidatedThemeCreate {
 		},
 		error: undefined
 	};
+}
+
+/**
+ * ThemePatch リクエストボディをバリデーション
+ * @param body - リクエストボディ（unknown）
+ * @returns バリデーション結果
+ */
+export function validateThemePatch(body: unknown): ValidatedThemePatch {
+	// bodyがオブジェクトか確認
+	if (!body || typeof body !== 'object') {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'Request body must be a JSON object'
+				}
+			}
+		};
+	}
+
+	const data = body as Record<string, unknown>;
+	const patch: {
+		name?: string;
+		goal?: string;
+		shortName?: string | null;
+		isCompleted?: boolean;
+	} = {};
+
+	// name（任意、文字列、1文字以上）
+	if ('name' in data) {
+		if (typeof data.name !== 'string' || data.name.trim().length === 0) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'name must be a non-empty string'
+					}
+				}
+			};
+		}
+		patch.name = data.name;
+	}
+
+	// goal（任意、文字列、1文字以上）
+	if ('goal' in data) {
+		if (typeof data.goal !== 'string' || data.goal.trim().length === 0) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'goal must be a non-empty string'
+					}
+				}
+			};
+		}
+		patch.goal = data.goal;
+	}
+
+	// shortName（任意、文字列またはnull）
+	if ('shortName' in data) {
+		if (data.shortName === null) {
+			patch.shortName = null;
+		} else if (typeof data.shortName === 'string') {
+			patch.shortName = data.shortName.trim().length > 0 ? data.shortName : null;
+		} else {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'shortName must be a string or null'
+					}
+				}
+			};
+		}
+	}
+
+	// isCompleted（任意、boolean）
+	if ('isCompleted' in data) {
+		if (typeof data.isCompleted !== 'boolean') {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'isCompleted must be a boolean'
+					}
+				}
+			};
+		}
+		patch.isCompleted = data.isCompleted;
+	}
+
+	// 何も更新項目がない場合
+	if (Object.keys(patch).length === 0) {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'At least one field must be provided'
+				}
+			}
+		};
+	}
+
+	return { data: patch };
 }
 
 /**

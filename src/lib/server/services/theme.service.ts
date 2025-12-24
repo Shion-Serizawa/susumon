@@ -91,6 +91,42 @@ export class ThemeService {
 			}
 		});
 	}
+
+	/**
+	 * テーマを更新
+	 * - userId スコープで越境を防止
+	 * - state = 'DELETED' は更新対象外
+	 */
+	async updateThemeById(params: {
+		userId: string;
+		themeId: string;
+		data: {
+			name?: string;
+			goal?: string;
+			shortName?: string | null;
+			isCompleted?: boolean;
+		};
+	}): Promise<Theme | null> {
+		const updateResult = await prisma.theme.updateMany({
+			where: {
+				userId: params.userId,
+				id: params.themeId,
+				state: { not: 'DELETED' }
+			},
+			data: params.data as Prisma.ThemeUpdateManyMutationInput
+		});
+
+		if (updateResult.count === 0) {
+			return null;
+		}
+
+		return prisma.theme.findFirst({
+			where: {
+				userId: params.userId,
+				id: params.themeId
+			}
+		});
+	}
 }
 
 // シングルトンインスタンスをエクスポート
