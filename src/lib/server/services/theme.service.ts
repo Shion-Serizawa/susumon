@@ -15,6 +15,7 @@ export class ThemeService {
 	async listThemes(params: {
 		userId: string;
 		includeCompleted: boolean;
+		includeArchived: boolean;
 		limit: number;
 		cursorData: ThemeCursor | null;
 	}) {
@@ -22,6 +23,11 @@ export class ThemeService {
 			userId: params.userId
 			// Prisma Client Extensions が自動的に state != 'DELETED' を追加
 		};
+
+		// state フィルタ（デフォルトは ACTIVE のみ）
+		if (!params.includeArchived) {
+			where.state = 'ACTIVE';
+		}
 
 		// isCompleted フィルタ
 		if (!params.includeCompleted) {
@@ -126,6 +132,63 @@ export class ThemeService {
 				id: params.themeId
 			}
 		});
+	}
+
+	/**
+	 * テーマを削除（論理削除）
+	 * - theme.state を 'DELETED' に更新
+	 * - 関連する logs / notes も 'DELETED' に更新（v0.2 仕様）
+	 */
+	async deleteThemeById(params: { userId: string; themeId: string }): Promise<boolean> {
+		const now = new Date();
+
+		const result = await prisma.$transaction(async (tx) => {
+			const themeUpdate = await tx.theme.updateMany({
+				where: {
+					userId: params.userId,
+					id: params.themeId,
+					state: { not: 'DELETED' }
+				},
+				data: {
+					state: 'DELETED',
+					stateChangedAt: now
+				}
+			});
+
+			if (themeUpdate.count === 0) {
+				return { deleted: false };
+			}
+
+			await tx.learningLogEntry.updateMany({
+				where: {
+					userId: params.userId,
+					themeId: params.themeId,
+					state: { not: 'DELETED' }
+				},
+				data: {
+					state: 'DELETED',
+					stateChangedAt: now
+				}
+			});
+
+			await tx.metaNote.updateMany({
+				where: {
+					userId: params.userId,
+					state: { not: 'DELETED' },
+					metaNoteThemes: {
+						some: { themeId: params.themeId }
+					}
+				},
+				data: {
+					state: 'DELETED',
+					stateChangedAt: now
+				}
+			});
+
+			return { deleted: true };
+		});
+
+		return result.deleted;
 	}
 }
 

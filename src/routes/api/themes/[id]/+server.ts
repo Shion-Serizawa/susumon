@@ -122,3 +122,49 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 		);
 	}
 };
+
+/**
+ * DELETE /api/themes/[id]
+ * テーマを削除（論理削除）
+ *
+ * Response:
+ * - 204: No Content
+ * - 400: BadRequest
+ * - 401: Unauthorized
+ * - 404: NotFound
+ * - 500: InternalServerError
+ */
+export const DELETE: RequestHandler = async ({ locals, params }) => {
+	// 認証チェック
+	if (!locals.user) {
+		return json(
+			{ error: { code: 'Unauthorized', message: 'Authentication required' } },
+			{ status: 401 }
+		);
+	}
+
+	// パスパラメータのバリデーション
+	const themeIdResult = validateUuidParam(params.id, 'id');
+	if (themeIdResult.error) {
+		return json(themeIdResult.error, { status: 400 });
+	}
+
+	try {
+		const deleted = await themeService.deleteThemeById({
+			userId: locals.user.id,
+			themeId: themeIdResult.value
+		});
+
+		if (!deleted) {
+			return json({ error: { code: 'NotFound', message: 'Theme not found' } }, { status: 404 });
+		}
+
+		return new Response(null, { status: 204 });
+	} catch (error) {
+		console.error('[DELETE /api/themes/[id]] Database error:', error);
+		return json(
+			{ error: { code: 'InternalServerError', message: 'Failed to delete theme' } },
+			{ status: 500 }
+		);
+	}
+};

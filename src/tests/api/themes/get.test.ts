@@ -228,4 +228,69 @@ describe('GET /api/themes', () => {
 		expect(body.error.code).toBe('BadRequest');
 		expect(body.error.message).toContain('Invalid cursor format');
 	});
+
+	it('should not include archived themes by default (includeArchived=false)', async () => {
+		// Arrange
+		await createTestTheme(mockUser.id, {
+			name: 'Active Theme',
+			goal: 'Active goal',
+			state: 'ACTIVE'
+		});
+		await createTestTheme(mockUser.id, {
+			name: 'Archived Theme',
+			goal: 'Archived goal',
+			state: 'ARCHIVED'
+		});
+
+		const request = new Request('http://localhost:5173/api/themes');
+		const event = {
+			request,
+			locals: { user: mockUser },
+			url: new URL(request.url),
+			params: {},
+			route: { id: '/api/themes' }
+		} as any;
+
+		// Act
+		const response = await GET(event);
+		const body = await response.json();
+
+		// Assert
+		expect(response.status).toBe(200);
+		expect(body.items).toHaveLength(1);
+		expect(body.items[0].name).toBe('Active Theme');
+	});
+
+	it('should include archived themes when includeArchived=true', async () => {
+		// Arrange
+		await createTestTheme(mockUser.id, {
+			name: 'Active Theme',
+			goal: 'Active goal',
+			state: 'ACTIVE'
+		});
+		await createTestTheme(mockUser.id, {
+			name: 'Archived Theme',
+			goal: 'Archived goal',
+			state: 'ARCHIVED'
+		});
+
+		const request = new Request('http://localhost:5173/api/themes?includeArchived=true');
+		const event = {
+			request,
+			locals: { user: mockUser },
+			url: new URL(request.url),
+			params: {},
+			route: { id: '/api/themes' }
+		} as any;
+
+		// Act
+		const response = await GET(event);
+		const body = await response.json();
+
+		// Assert
+		expect(response.status).toBe(200);
+		expect(body.items).toHaveLength(2);
+		const names = (body.items as Array<{ name: string }>).map((t) => t.name).sort();
+		expect(names).toEqual(['Active Theme', 'Archived Theme']);
+	});
 });
