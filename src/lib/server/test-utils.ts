@@ -42,6 +42,7 @@ export async function createTestTheme(userId: string, data: {
 	goal: string;
 	shortName?: string;
 	isCompleted?: boolean;
+	state?: 'ACTIVE' | 'ARCHIVED' | 'DELETED';
 }) {
 	// Use queryRaw with RETURNING to get the created record
 	const result = await prisma.$queryRaw<Array<{
@@ -62,7 +63,7 @@ export async function createTestTheme(userId: string, data: {
 			${data.goal},
 			${data.shortName ?? null},
 			${data.isCompleted ?? false},
-			'ACTIVE'::"ResourceState",
+			${(data.state ?? 'ACTIVE')}::"ResourceState",
 			NOW(),
 			NOW(),
 			NOW()

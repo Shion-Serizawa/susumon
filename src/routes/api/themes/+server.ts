@@ -31,6 +31,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 	// クエリパラメータの取得
 	const includeCompleted = url.searchParams.get('includeCompleted') === 'true';
+	const includeArchived = url.searchParams.get('includeArchived') === 'true';
 	const limitParam = url.searchParams.get('limit');
 	const cursorParam = url.searchParams.get('cursor');
 
@@ -53,6 +54,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		const result = await themeService.listThemes({
 			userId: locals.user.id,
 			includeCompleted,
+			includeArchived,
 			limit,
 			cursorData
 		});
