@@ -47,6 +47,40 @@ export interface ValidatedUuid {
 }
 
 /**
+ * LearningLogCreate のバリデーション結果
+ */
+export interface ValidatedLogCreate {
+	data: {
+		themeId: string;
+		date: string;
+		summary: string;
+		details?: string | null;
+		tags?: string[];
+	} | null;
+	error?: ApiError;
+}
+
+/**
+ * LearningLogPatch のバリデーション結果
+ */
+export interface ValidatedLogPatch {
+	data: {
+		summary?: string;
+		details?: string | null;
+		tags?: string[];
+	} | null;
+	error?: ApiError;
+}
+
+/**
+ * Date パラメータのバリデーション結果
+ */
+export interface ValidatedDate {
+	value: string;
+	error?: ApiError;
+}
+
+/**
  * limit パラメータをバリデーション
  * @param limitParam - クエリパラメータの値
  * @param defaultValue - デフォルト値（通常50）
@@ -313,6 +347,322 @@ export function validateUuidParam(value: string | null, paramName = 'id'): Valid
 				error: {
 					code: 'BadRequest',
 					message: `${paramName} must be a valid UUID`
+				}
+			}
+		};
+	}
+
+	return { value };
+}
+
+/**
+ * LearningLogCreate リクエストボディをバリデーション
+ * @param body - リクエストボディ（unknown）
+ * @returns バリデーション結果
+ */
+export function validateLogCreate(body: unknown): ValidatedLogCreate {
+	// bodyがオブジェクトか確認
+	if (!body || typeof body !== 'object') {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'Request body must be a JSON object'
+				}
+			}
+		};
+	}
+
+	const data = body as Record<string, unknown>;
+
+	// themeId のバリデーション（必須、UUID）
+	if (!data.themeId || typeof data.themeId !== 'string') {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'themeId is required and must be a string'
+				}
+			}
+		};
+	}
+
+	const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+	if (!uuidRegex.test(data.themeId)) {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'themeId must be a valid UUID'
+				}
+			}
+		};
+	}
+
+	// date のバリデーション（必須、YYYY-MM-DD形式）
+	if (!data.date || typeof data.date !== 'string') {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'date is required and must be a string'
+				}
+			}
+		};
+	}
+
+	const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+	if (!dateRegex.test(data.date)) {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'date must be in YYYY-MM-DD format'
+				}
+			}
+		};
+	}
+
+	// 日付として有効かチェック
+	const parsedDate = new Date(data.date);
+	if (isNaN(parsedDate.getTime())) {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'date must be a valid date'
+				}
+			}
+		};
+	}
+
+	// summary のバリデーション（必須、文字列、1文字以上）
+	if (!data.summary || typeof data.summary !== 'string' || data.summary.trim().length === 0) {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'summary is required and must be a non-empty string'
+				}
+			}
+		};
+	}
+
+	// details のバリデーション（オプション、文字列またはnull）
+	let details: string | null | undefined = undefined;
+	if ('details' in data) {
+		if (data.details === null) {
+			details = null;
+		} else if (typeof data.details === 'string') {
+			details = data.details;
+		} else {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'details must be a string or null'
+					}
+				}
+			};
+		}
+	}
+
+	// tags のバリデーション（オプション、文字列配列）
+	let tags: string[] | undefined = undefined;
+	if ('tags' in data) {
+		if (!Array.isArray(data.tags)) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'tags must be an array'
+					}
+				}
+			};
+		}
+
+		if (!data.tags.every((tag) => typeof tag === 'string')) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'tags must be an array of strings'
+					}
+				}
+			};
+		}
+
+		tags = data.tags as string[];
+	}
+
+	return {
+		data: {
+			themeId: data.themeId,
+			date: data.date,
+			summary: data.summary,
+			...(details !== undefined && { details }),
+			...(tags !== undefined && { tags })
+		},
+		error: undefined
+	};
+}
+
+/**
+ * LearningLogPatch リクエストボディをバリデーション
+ * @param body - リクエストボディ（unknown）
+ * @returns バリデーション結果
+ */
+export function validateLogPatch(body: unknown): ValidatedLogPatch {
+	// bodyがオブジェクトか確認
+	if (!body || typeof body !== 'object') {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'Request body must be a JSON object'
+				}
+			}
+		};
+	}
+
+	const data = body as Record<string, unknown>;
+	const patch: {
+		summary?: string;
+		details?: string | null;
+		tags?: string[];
+	} = {};
+
+	// summary（任意、文字列、1文字以上）
+	if ('summary' in data) {
+		if (typeof data.summary !== 'string' || data.summary.trim().length === 0) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'summary must be a non-empty string'
+					}
+				}
+			};
+		}
+		patch.summary = data.summary;
+	}
+
+	// details（任意、文字列またはnull）
+	if ('details' in data) {
+		if (data.details === null) {
+			patch.details = null;
+		} else if (typeof data.details === 'string') {
+			patch.details = data.details;
+		} else {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'details must be a string or null'
+					}
+				}
+			};
+		}
+	}
+
+	// tags（任意、文字列配列）
+	if ('tags' in data) {
+		if (!Array.isArray(data.tags)) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'tags must be an array'
+					}
+				}
+			};
+		}
+
+		if (!data.tags.every((tag) => typeof tag === 'string')) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'tags must be an array of strings'
+					}
+				}
+			};
+		}
+
+		patch.tags = data.tags as string[];
+	}
+
+	// 何も更新項目がない場合
+	if (Object.keys(patch).length === 0) {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'At least one field must be provided'
+				}
+			}
+		};
+	}
+
+	return { data: patch };
+}
+
+/**
+ * Date パラメータをバリデーション（YYYY-MM-DD形式）
+ * @param value - パラメータ値
+ * @param paramName - パラメータ名（エラーメッセージ用）
+ */
+export function validateDateParam(value: string | null, paramName = 'date'): ValidatedDate {
+	if (!value || typeof value !== 'string') {
+		return {
+			value: '',
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: `${paramName} is required`
+				}
+			}
+		};
+	}
+
+	const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+	if (!dateRegex.test(value)) {
+		return {
+			value: '',
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: `${paramName} must be in YYYY-MM-DD format`
+				}
+			}
+		};
+	}
+
+	// 日付として有効かチェック
+	const parsedDate = new Date(value);
+	if (isNaN(parsedDate.getTime())) {
+		return {
+			value: '',
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: `${paramName} must be a valid date`
 				}
 			}
 		};
