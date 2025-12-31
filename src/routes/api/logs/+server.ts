@@ -1,9 +1,15 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { LogCursor } from '$lib/server/api-types';
-import { validateLimit, validateLogCreate, validateUuidParam } from '$lib/server/validation';
+import {
+	validateLimit,
+	validateLogCreate,
+	validateUuidParam,
+	validateDateParam
+} from '$lib/server/validation';
 import { decodeCursor } from '$lib/server/pagination';
 import { logService } from '$lib/server/services/log.service';
+import { Prisma } from '@prisma/client';
 
 /**
  * GET /api/logs

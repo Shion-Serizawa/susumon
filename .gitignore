@@ -53,6 +53,7 @@ generated/
 # Temporary files
 *.tmp
 .cache/
+.tmp/
 
 # Vite
 vite.config.js.timestamp-*
