@@ -7,6 +7,8 @@
 
   let { data }: { data: PageData } = $props();
 
+  // Note: Using initial values from `data` is intentional in SvelteKit pages.
+  // The component re-mounts on navigation, so we don't need $derived here.
   let source = $state(data.source);
   let includeCompleted = $state(data.includeCompleted);
   let includeArchived = $state(data.includeArchived);
@@ -196,7 +198,7 @@
         <div class="text-sm text-gray-500">これ以上ありません。</div>
       {/if}
 
-      <div bind:this={sentinel} class="h-1 w-full" />
+      <div bind:this={sentinel} class="h-1 w-full"></div>
     </div>
   {/if}
 </div>

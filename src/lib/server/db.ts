@@ -2,6 +2,7 @@
 import prismaClientPkg from '@prisma/client';
 const { PrismaClient, Prisma } = prismaClientPkg;
 import { PrismaPg } from '@prisma/adapter-pg';
+// @ts-expect-error - pg module doesn't have types in Deno environment
 import pg from 'pg';
 
 function getDenoEnv(key: string): string | undefined {

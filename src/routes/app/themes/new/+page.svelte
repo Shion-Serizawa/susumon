@@ -81,7 +81,7 @@
           if (fieldErrors.goal) fieldErrors = { ...fieldErrors, goal: "" };
         }}
         required
-      />
+      ></textarea>
       {#if fieldErrors.goal}
         <p class="mt-1 text-sm text-red-700">{fieldErrors.goal}</p>
       {/if}
