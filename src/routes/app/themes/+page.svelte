@@ -3,6 +3,7 @@
   import type { PageData } from './$types';
   import type { ApiErrorResponse } from '$lib/types';
   import { getMockThemesPage, type ThemeListItem } from '$lib/mocks/themes';
+  import { buildThemesUrl } from '$lib/utils/url-builder';
 
   let { data }: { data: PageData } = $props();
 
@@ -24,20 +25,6 @@
     if (next.includeCompleted) sp.set('includeCompleted', 'true');
     if (next.includeArchived) sp.set('includeArchived', 'true');
     goto(`/app/themes?${sp.toString()}`, { replaceState: true });
-  }
-
-  function buildThemesUrl(params: {
-    includeCompleted: boolean;
-    includeArchived: boolean;
-    limit: number;
-    cursor: string | null;
-  }): string {
-    const sp = new URLSearchParams();
-    if (params.includeCompleted) sp.set('includeCompleted', 'true');
-    if (params.includeArchived) sp.set('includeArchived', 'true');
-    sp.set('limit', String(params.limit));
-    if (params.cursor) sp.set('cursor', params.cursor);
-    return `/api/themes?${sp.toString()}`;
   }
 
   async function loadMore() {

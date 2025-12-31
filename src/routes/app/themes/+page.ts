@@ -2,28 +2,10 @@ import { error } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 import type { ApiErrorResponse, PaginatedResponse } from "$lib/types";
 import { getMockThemesPage, type ThemeListItem } from "$lib/mocks/themes";
+import { buildThemesUrl, parseBool } from "$lib/utils/url-builder";
 
 type ThemeListResponse = PaginatedResponse<ThemeListItem>;
 type DataSource = "api" | "mock";
-
-function parseBool(value: string | null): boolean {
-  if (!value) return false;
-  return value === "1" || value.toLowerCase() === "true";
-}
-
-function buildThemesUrl(params: {
-  includeCompleted: boolean;
-  includeArchived: boolean;
-  limit: number;
-  cursor: string | null;
-}): string {
-  const sp = new URLSearchParams();
-  if (params.includeCompleted) sp.set("includeCompleted", "true");
-  if (params.includeArchived) sp.set("includeArchived", "true");
-  sp.set("limit", String(params.limit));
-  if (params.cursor) sp.set("cursor", params.cursor);
-  return `/api/themes?${sp.toString()}`;
-}
 
 async function readErrorMessage(response: Response): Promise<string> {
   const contentType = response.headers.get("content-type") ?? "";

@@ -1,34 +1,13 @@
 import { fail, redirect } from "@sveltejs/kit";
 import type { Actions } from "./$types";
-import type { ApiErrorResponse, Theme } from "$lib/types";
-
-function asNonEmptyString(value: FormDataEntryValue | null): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-function asOptionalTrimmedString(
-  value: FormDataEntryValue | null,
-): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-async function readApiErrorMessage(response: Response): Promise<string> {
-  const contentType = response.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
-    try {
-      const body = (await response.json()) as ApiErrorResponse;
-      if (body?.error?.message) return body.error.message;
-    } catch {
-      // ignore
-    }
-  }
-  return response.statusText ||
-    `リクエストに失敗しました（${response.status}）`;
-}
+import type { Theme } from "$lib/types";
+import {
+  asNonEmptyString,
+  asOptionalTrimmedString,
+  validateMaxLength,
+  validateRequired,
+} from "$lib/server/form-utils";
+import { readApiErrorMessage } from "$lib/server/api-utils";
 
 export const actions: Actions = {
   default: async ({ request, fetch }) => {
@@ -39,11 +18,23 @@ export const actions: Actions = {
     const shortName = asOptionalTrimmedString(formData.get("shortName"));
 
     const fieldErrors: Record<string, string> = {};
-    if (!name) fieldErrors.name = "名称は必須です。";
-    if (!goal) fieldErrors.goal = "目標は必須です。";
-    if (shortName && shortName.length > 50) {
-      fieldErrors.shortName = "略称は50文字以内にしてください。";
-    }
+
+    // Required field validation
+    const nameError = validateRequired(name, "名称");
+    if (nameError) fieldErrors.name = nameError;
+
+    const goalError = validateRequired(goal, "目標");
+    if (goalError) fieldErrors.goal = goalError;
+
+    // Max length validation (based on common practices: 255 for name/goal, 50 for shortName)
+    const nameMaxError = validateMaxLength(name, "名称", 255);
+    if (nameMaxError) fieldErrors.name = nameMaxError;
+
+    const goalMaxError = validateMaxLength(goal, "目標", 1000);
+    if (goalMaxError) fieldErrors.goal = goalMaxError;
+
+    const shortNameMaxError = validateMaxLength(shortName, "略称", 50);
+    if (shortNameMaxError) fieldErrors.shortName = shortNameMaxError;
 
     const values = {
       name: name ?? "",

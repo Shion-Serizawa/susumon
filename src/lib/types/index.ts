@@ -189,6 +189,22 @@ export interface ThemeUpdateDto {
 }
 
 /**
+ * ThemeDetail - Theme with all fields (used in detail pages)
+ * This is the same as Theme but with Date fields as strings for JSON serialization
+ */
+export interface ThemeDetail {
+	id: string;
+	name: string;
+	shortName: string | null;
+	goal: string;
+	isCompleted: boolean;
+	state: ResourceState;
+	stateChangedAt: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+/**
  * LearningLogEntry Creation DTO
  */
 export interface LearningLogCreateDto {

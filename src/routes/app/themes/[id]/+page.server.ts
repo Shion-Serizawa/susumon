@@ -1,37 +1,13 @@
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
-import type { ApiErrorResponse } from "$lib/types";
-
-type ThemeDetail = {
-  id: string;
-  name: string;
-  shortName: string | null;
-  goal: string;
-  isCompleted: boolean;
-  state: "ACTIVE" | "ARCHIVED" | "DELETED";
-  stateChangedAt: string;
-  createdAt: string;
-  updatedAt: string;
-};
+import type { ThemeDetail } from "$lib/types";
+import { readApiErrorMessage } from "$lib/server/api-utils";
 
 type RecentLog = {
   id: string;
   date: string; // YYYY-MM-DD
   summary: string;
 };
-
-async function readApiErrorMessage(response: Response): Promise<string> {
-  const contentType = response.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
-    try {
-      const body = (await response.json()) as ApiErrorResponse;
-      if (body?.error?.message) return body.error.message;
-    } catch {
-      // ignore
-    }
-  }
-  return response.statusText || `Request failed (${response.status})`;
-}
 
 export const load: PageServerLoad = async ({ fetch, params }) => {
   const themeRes = await fetch(`/api/themes/${params.id}`);
