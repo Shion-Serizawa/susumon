@@ -9,6 +9,7 @@ import {
 } from '$lib/server/validation';
 import { decodeCursor } from '$lib/server/pagination';
 import { logService } from '$lib/server/services/log.service';
+import { logDatabaseError } from '$lib/server/error-logging';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -101,15 +102,13 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 		return json(result);
 	} catch (error) {
-		console.error('[GET /api/logs] Database error:', {
+		logDatabaseError('GET /api/logs', error, {
 			filters: {
 				hasThemeId: !!themeId,
 				hasDateRange: !!(startDate || endDate),
 				dateRange: startDate || endDate ? `${startDate || 'any'} to ${endDate || 'any'}` : undefined,
 				limit
-			},
-			errorType: error instanceof Error ? error.constructor.name : typeof error,
-			message: error instanceof Error ? error.message : String(error)
+			}
 		});
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Database query failed' } },
@@ -173,16 +172,14 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 		return json(log, { status: 201 });
 	} catch (error: unknown) {
-		console.error('[POST /api/logs] Database error:', {
+		logDatabaseError('POST /api/logs', error, {
 			data: {
 				hasThemeId: !!logData.themeId,
 				date: logData.date,
 				hasSummary: !!logData.summary,
 				hasDetails: logData.details !== undefined,
 				tagsCount: logData.tags?.length ?? 0
-			},
-			errorType: error instanceof Error ? error.constructor.name : typeof error,
-			message: error instanceof Error ? error.message : String(error)
+			}
 		});
 
 		// Prismaエラーの型ガード

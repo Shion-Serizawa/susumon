@@ -44,24 +44,22 @@ export class LogService {
 		// カーソルによる範囲指定
 		// 並び順: date desc, createdAt desc, id desc
 		if (params.cursorData) {
+			const cursorDate = new Date(params.cursorData.date);
+			const cursorCreatedAt = new Date(params.cursorData.createdAt);
+
 			where.OR = [
+				// date が cursor より小さい（降順なので過去の日付）
+				{ date: { lt: cursorDate } },
+				// date が同じで createdAt が小さい
 				{
-					date: {
-						lt: new Date(params.cursorData.date)
-					}
+					date: cursorDate,
+					createdAt: { lt: cursorCreatedAt }
 				},
+				// date と createdAt が同じで id が小さい
 				{
-					date: new Date(params.cursorData.date),
-					createdAt: {
-						lt: new Date(params.cursorData.createdAt)
-					}
-				},
-				{
-					date: new Date(params.cursorData.date),
-					createdAt: new Date(params.cursorData.createdAt),
-					id: {
-						lt: params.cursorData.id
-					}
+					date: cursorDate,
+					createdAt: cursorCreatedAt,
+					id: { lt: params.cursorData.id }
 				}
 			];
 		}

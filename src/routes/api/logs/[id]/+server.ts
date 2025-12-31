@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { validateLogPatch } from '$lib/server/validation';
 import { logService } from '$lib/server/services/log.service';
+import { logDatabaseError } from '$lib/server/error-logging';
 
 /**
  * GET /api/logs/[id]
@@ -37,11 +38,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 
 		return json(log);
 	} catch (error) {
-		console.error('[GET /api/logs/[id]] Database error:', {
-			logId,
-			errorType: error instanceof Error ? error.constructor.name : typeof error,
-			message: error instanceof Error ? error.message : String(error)
-		});
+		logDatabaseError('GET /api/logs/[id]', error, { logId });
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Database query failed' } },
 			{ status: 500 }
@@ -109,16 +106,14 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 
 		return json(updatedLog);
 	} catch (error) {
-		console.error('[PATCH /api/logs/[id]] Database error:', {
+		logDatabaseError('PATCH /api/logs/[id]', error, {
 			logId,
 			updates: {
 				hasSummary: patchData.summary !== undefined,
 				hasDetails: patchData.details !== undefined,
 				hasTags: patchData.tags !== undefined,
 				tagsCount: patchData.tags?.length ?? 0
-			},
-			errorType: error instanceof Error ? error.constructor.name : typeof error,
-			message: error instanceof Error ? error.message : String(error)
+			}
 		});
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Failed to update log' } },
@@ -161,11 +156,7 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 
 		return new Response(null, { status: 204 });
 	} catch (error) {
-		console.error('[DELETE /api/logs/[id]] Database error:', {
-			logId,
-			errorType: error instanceof Error ? error.constructor.name : typeof error,
-			message: error instanceof Error ? error.message : String(error)
-		});
+		logDatabaseError('DELETE /api/logs/[id]', error, { logId });
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Failed to delete log' } },
 			{ status: 500 }
