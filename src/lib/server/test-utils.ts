@@ -73,3 +73,47 @@ export async function createTestTheme(userId: string, data: {
 
 	return result[0];
 }
+
+/**
+ * Create a test learning log directly via SQL to bypass security guards
+ * Returns the created log data
+ */
+export async function createTestLog(userId: string, data: {
+	themeId: string;
+	date: string;
+	summary: string;
+	details?: string | null;
+	tags?: string[];
+	state?: 'ACTIVE' | 'ARCHIVED' | 'DELETED';
+}) {
+	// Use queryRaw with RETURNING to get the created record
+	const result = await prisma.$queryRaw<Array<{
+		id: string;
+		user_id: string;
+		theme_id: string;
+		date: Date;
+		summary: string;
+		details: string | null;
+		tags: string[];
+		state: string;
+		created_at: Date;
+		updated_at: Date;
+	}>>`
+		INSERT INTO learning_log_entries (user_id, theme_id, date, summary, details, tags, state, state_changed_at, created_at, updated_at)
+		VALUES (
+			${userId}::uuid,
+			${data.themeId}::uuid,
+			${data.date}::date,
+			${data.summary},
+			${data.details ?? null},
+			${data.tags ?? []}::text[],
+			${(data.state ?? 'ACTIVE')}::"ResourceState",
+			NOW(),
+			NOW(),
+			NOW()
+		)
+		RETURNING *
+	`;
+
+	return result[0];
+}

@@ -4,6 +4,7 @@ import type { ThemeCursor } from '$lib/server/api-types';
 import { validateLimit, validateThemeCreate } from '$lib/server/validation';
 import { decodeCursor } from '$lib/server/pagination';
 import { themeService } from '$lib/server/services/theme.service';
+import { logDatabaseError } from '$lib/server/error-logging';
 
 /**
  * GET /api/themes
@@ -61,7 +62,9 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 		return json(result);
 	} catch (error) {
-		console.error('[GET /api/themes] Database error:', error);
+		logDatabaseError('GET /api/themes', error, {
+			filters: { includeCompleted, includeArchived, limit }
+		});
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Database query failed' } },
 			{ status: 500 }
@@ -122,7 +125,13 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 		return json(theme, { status: 201 });
 	} catch (error) {
-		console.error('[POST /api/themes] Database error:', error);
+		logDatabaseError('POST /api/themes', error, {
+			data: {
+				hasName: !!themeData.name,
+				hasGoal: !!themeData.goal,
+				hasNotes: themeData.notes !== undefined
+			}
+		});
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Failed to create theme' } },
 			{ status: 500 }

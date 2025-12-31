@@ -6,7 +6,9 @@
       "Bash(curl:*)",
       "Bash(docker compose:*)",
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
