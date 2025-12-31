@@ -415,30 +415,12 @@ export function validateLogCreate(body: unknown): ValidatedLogCreate {
 		};
 	}
 
-	const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-	if (!dateRegex.test(data.date)) {
+	// 日付のバリデーション（validateDateParam ユーティリティを再利用）
+	const dateValidation = validateDateParam(data.date, 'date');
+	if (dateValidation.error) {
 		return {
 			data: null,
-			error: {
-				error: {
-					code: 'BadRequest',
-					message: 'date must be in YYYY-MM-DD format'
-				}
-			}
-		};
-	}
-
-	// 日付として有効かチェック
-	const parsedDate = new Date(data.date);
-	if (isNaN(parsedDate.getTime())) {
-		return {
-			data: null,
-			error: {
-				error: {
-					code: 'BadRequest',
-					message: 'date must be a valid date'
-				}
-			}
+			error: dateValidation.error
 		};
 	}
 

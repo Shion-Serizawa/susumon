@@ -101,7 +101,16 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 		return json(result);
 	} catch (error) {
-		console.error('[GET /api/logs] Database error:', error);
+		console.error('[GET /api/logs] Database error:', {
+			filters: {
+				hasThemeId: !!themeId,
+				hasDateRange: !!(startDate || endDate),
+				dateRange: startDate || endDate ? `${startDate || 'any'} to ${endDate || 'any'}` : undefined,
+				limit
+			},
+			errorType: error instanceof Error ? error.constructor.name : typeof error,
+			message: error instanceof Error ? error.message : String(error)
+		});
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Database query failed' } },
 			{ status: 500 }
@@ -164,7 +173,17 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 		return json(log, { status: 201 });
 	} catch (error: unknown) {
-		console.error('[POST /api/logs] Database error:', error);
+		console.error('[POST /api/logs] Database error:', {
+			data: {
+				hasThemeId: !!logData.themeId,
+				date: logData.date,
+				hasSummary: !!logData.summary,
+				hasDetails: logData.details !== undefined,
+				tagsCount: logData.tags?.length ?? 0
+			},
+			errorType: error instanceof Error ? error.constructor.name : typeof error,
+			message: error instanceof Error ? error.message : String(error)
+		});
 
 		// Prismaエラーの型ガード
 		if (error instanceof Prisma.PrismaClientKnownRequestError) {
