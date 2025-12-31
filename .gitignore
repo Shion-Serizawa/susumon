@@ -49,6 +49,7 @@ generated/
 
 # Claude Code (user-specific MCP configs may contain secrets)
 .claude/config.json
+.claude/skills/skill-authoring
 
 # Temporary files
 *.tmp
