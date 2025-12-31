@@ -59,25 +59,19 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	let endDate: string | undefined = undefined;
 
 	if (startDateParam) {
-		const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-		if (!dateRegex.test(startDateParam)) {
-			return json(
-				{ error: { code: 'BadRequest', message: 'start must be in YYYY-MM-DD format' } },
-				{ status: 400 }
-			);
+		const startDateResult = validateDateParam(startDateParam, 'start');
+		if (startDateResult.error) {
+			return json(startDateResult.error, { status: 400 });
 		}
-		startDate = startDateParam;
+		startDate = startDateResult.value;
 	}
 
 	if (endDateParam) {
-		const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-		if (!dateRegex.test(endDateParam)) {
-			return json(
-				{ error: { code: 'BadRequest', message: 'end must be in YYYY-MM-DD format' } },
-				{ status: 400 }
-			);
+		const endDateResult = validateDateParam(endDateParam, 'end');
+		if (endDateResult.error) {
+			return json(endDateResult.error, { status: 400 });
 		}
-		endDate = endDateParam;
+		endDate = endDateResult.value;
 	}
 
 	// limit のバリデーション
@@ -169,28 +163,31 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		});
 
 		return json(log, { status: 201 });
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error('[POST /api/logs] Database error:', error);
 
-		// P2002: 一意制約違反（1日1テーマ1ログ制約）
-		if (error.code === 'P2002') {
-			return json(
-				{
-					error: {
-						code: 'Conflict',
-						message: 'A log for this theme on this date already exists'
-					}
-				},
-				{ status: 409 }
-			);
-		}
+		// Prismaエラーの型ガード
+		if (error instanceof Prisma.PrismaClientKnownRequestError) {
+			// P2002: 一意制約違反（1日1テーマ1ログ制約）
+			if (error.code === 'P2002') {
+				return json(
+					{
+						error: {
+							code: 'Conflict',
+							message: 'A log for this theme on this date already exists'
+						}
+					},
+					{ status: 409 }
+				);
+			}
 
-		// P2003: 外部キー制約違反（themeIdが存在しない）
-		if (error.code === 'P2003') {
-			return json(
-				{ error: { code: 'BadRequest', message: 'Referenced theme not found' } },
-				{ status: 400 }
-			);
+			// P2003: 外部キー制約違反（themeIdが存在しない）
+			if (error.code === 'P2003') {
+				return json(
+					{ error: { code: 'BadRequest', message: 'Referenced theme not found' } },
+					{ status: 400 }
+				);
+			}
 		}
 
 		return json(
