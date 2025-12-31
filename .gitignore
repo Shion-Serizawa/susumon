@@ -19,7 +19,6 @@ node_modules/
 
 # Logs
 *.log
-logs/
 
 # Test
 test-results
