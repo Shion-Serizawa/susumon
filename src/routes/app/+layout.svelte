@@ -6,7 +6,7 @@
 <div class="app-layout">
   <header>
     <nav>
-      <h1>Learning Log</h1>
+      <h1><a href="/app">Susumon</a></h1>
       <!-- TODO: Add navigation links -->
     </nav>
   </header>
@@ -30,6 +30,15 @@
 
   nav h1 {
     margin: 0;
+  }
+
+  nav a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  nav a:hover {
+    text-decoration: underline;
   }
 
   main {

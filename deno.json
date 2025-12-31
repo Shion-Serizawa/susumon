@@ -1,8 +1,8 @@
 {
   "tasks": {
-    "dev": "deno task db:generate && deno run -A npm:vite@7 dev",
-    "build": "deno task db:generate && deno run -A npm:vite@7 build",
-    "preview": "deno run -A npm:vite@7 preview",
+    "dev": "deno task db:generate && deno run -A --env-file=.env npm:vite@7 dev",
+    "build": "deno task db:generate && deno run -A --env-file=.env npm:vite@7 build",
+    "preview": "deno task ensure:env && deno run -A --env-file=.env npm:vite@7 preview",
     "prepare": "deno run -A npm:@sveltejs/kit@2 sync",
     "check": "deno run -A npm:@sveltejs/kit@2 sync && deno run -A npm:svelte-check@4 --tsconfig ./tsconfig.json",
     "check:watch": "deno run -A npm:@sveltejs/kit@2 sync && deno run -A npm:svelte-check@4 --tsconfig ./tsconfig.json --watch",

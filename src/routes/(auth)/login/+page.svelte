@@ -4,9 +4,9 @@
 </script>
 
 <div class="login-container">
-  <h1>Login</h1>
-  <p>Authentication will be implemented in a later phase.</p>
-  <p>Currently using mock authentication (USE_MOCK_AUTH=true).</p>
+  <h1>ログイン</h1>
+  <p>認証は後のフェーズで実装します。</p>
+  <p>現在はモック認証（USE_MOCK_AUTH=true）で動作しています。</p>
 </div>
 
 <style>

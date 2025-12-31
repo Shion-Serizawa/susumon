@@ -3,15 +3,15 @@
 </script>
 
 <div class="home">
-  <h1>Welcome to Learning Log</h1>
-  <p>Your personal learning journey tracker.</p>
+  <h1>Susumonへようこそ</h1>
+  <p>個人学習の記録と振り返りをサポートします。</p>
 
   <section class="quick-links">
-    <h2>Quick Links</h2>
+    <h2>クイックリンク</h2>
     <ul>
-      <li><a href="/app/themes">Manage Themes</a></li>
-      <li><a href="/app/logs">Learning Logs</a></li>
-      <li><a href="/app/notes">Meta Notes</a></li>
+      <li><a href="/app/themes">テーマ管理</a></li>
+      <li><a href="/app/logs">ラーニングログ</a></li>
+      <li><a href="/app/notes">メタノート</a></li>
     </ul>
   </section>
 </div>
