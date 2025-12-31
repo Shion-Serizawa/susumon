@@ -472,13 +472,13 @@ export function validateLogCreate(body: unknown): ValidatedLogCreate {
 			};
 		}
 
-		if (!data.tags.every((tag) => typeof tag === 'string')) {
+		if (!data.tags.every((tag) => typeof tag === 'string' && tag.trim().length > 0)) {
 			return {
 				data: null,
 				error: {
 					error: {
 						code: 'BadRequest',
-						message: 'tags must be an array of strings'
+						message: 'tags must be an array of non-empty strings'
 					}
 				}
 			};
@@ -574,13 +574,13 @@ export function validateLogPatch(body: unknown): ValidatedLogPatch {
 			};
 		}
 
-		if (!data.tags.every((tag) => typeof tag === 'string')) {
+		if (!data.tags.every((tag) => typeof tag === 'string' && tag.trim().length > 0)) {
 			return {
 				data: null,
 				error: {
 					error: {
 						code: 'BadRequest',
-						message: 'tags must be an array of strings'
+						message: 'tags must be an array of non-empty strings'
 					}
 				}
 			};
@@ -639,6 +639,25 @@ export function validateDateParam(value: string | null, paramName = 'date'): Val
 	// 日付として有効かチェック
 	const parsedDate = new Date(value);
 	if (isNaN(parsedDate.getTime())) {
+		return {
+			value: '',
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: `${paramName} must be a valid date`
+				}
+			}
+		};
+	}
+
+	// 入力値と変換後の日付が一致するか確認（自動変換を防ぐ）
+	// 例: 2025-02-30 → 2025-03-02 に自動変換されるのを防ぐ
+	const [year, month, day] = value.split('-').map(Number);
+	if (
+		parsedDate.getFullYear() !== year ||
+		parsedDate.getMonth() + 1 !== month ||
+		parsedDate.getDate() !== day
+	) {
 		return {
 			value: '',
 			error: {

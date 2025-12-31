@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { themeService } from '$lib/server/services/theme.service';
 import { validateThemePatch, validateUuidParam } from '$lib/server/validation';
+import { logDatabaseError } from '$lib/server/error-logging';
 
 /**
  * GET /api/themes/[id]
@@ -45,7 +46,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 
 		return json(theme);
 	} catch (error) {
-		console.error('[GET /api/themes/[id]] Database error:', error);
+		logDatabaseError('GET /api/themes/[id]', error, { themeId });
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Database query failed' } },
 			{ status: 500 }
@@ -115,7 +116,15 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 
 		return json(theme);
 	} catch (error) {
-		console.error('[PATCH /api/themes/[id]] Database error:', error);
+		logDatabaseError('PATCH /api/themes/[id]', error, {
+			themeId,
+			updates: {
+				hasName: patchData.name !== undefined,
+				hasGoal: patchData.goal !== undefined,
+				hasNotes: patchData.notes !== undefined,
+				hasIsCompleted: patchData.isCompleted !== undefined
+			}
+		});
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Failed to update theme' } },
 			{ status: 500 }
@@ -161,7 +170,7 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 
 		return new Response(null, { status: 204 });
 	} catch (error) {
-		console.error('[DELETE /api/themes/[id]] Database error:', error);
+		logDatabaseError('DELETE /api/themes/[id]', error, { themeId: themeIdResult.value });
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Failed to delete theme' } },
 			{ status: 500 }

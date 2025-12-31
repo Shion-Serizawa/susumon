@@ -7,6 +7,7 @@ import { prisma } from '$lib/server/db';
 import type { Prisma, LearningLogEntry } from '@prisma/client';
 import type { LogCursor } from '$lib/server/api-types';
 import { buildPaginatedResponse } from '$lib/server/pagination';
+import { formatDateAsLocal } from '$lib/server/date-utils';
 
 export class LogService {
 	/**
@@ -73,7 +74,7 @@ export class LogService {
 
 		// ページネーション結果の構築
 		return buildPaginatedResponse(logs, params.limit, (log) => ({
-			date: log.date.toISOString().split('T')[0], // YYYY-MM-DD
+			date: formatDateAsLocal(log.date), // YYYY-MM-DD（ローカルタイムゾーン）
 			createdAt: log.createdAt.toISOString(),
 			id: log.id
 		}));
