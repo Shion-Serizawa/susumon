@@ -671,3 +671,319 @@ export function validateDateParam(value: string | null, paramName = 'date'): Val
 
 	return { value };
 }
+
+/**
+ * MetaNote category の許可値（v0.2: 英語キー）
+ */
+export const VALID_CATEGORIES = ['INSIGHT', 'QUESTION', 'EMOTION'] as const;
+export type MetaNoteCategory = (typeof VALID_CATEGORIES)[number];
+
+/**
+ * MetaNoteCreate のバリデーション結果
+ */
+export interface ValidatedNoteCreate {
+	data: {
+		category: MetaNoteCategory;
+		body: string;
+		themeIds?: string[];
+		relatedLogId?: string | null;
+	} | null;
+	error?: ApiError;
+}
+
+/**
+ * MetaNotePatch のバリデーション結果
+ */
+export interface ValidatedNotePatch {
+	data: {
+		category?: MetaNoteCategory;
+		body?: string;
+		themeIds?: string[];
+		relatedLogId?: string | null;
+	} | null;
+	error?: ApiError;
+}
+
+/**
+ * MetaNoteCreate リクエストボディをバリデーション
+ * @param body - リクエストボディ（unknown）
+ * @returns バリデーション結果
+ */
+export function validateNoteCreate(body: unknown): ValidatedNoteCreate {
+	// bodyがオブジェクトか確認
+	if (!body || typeof body !== 'object') {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'Request body must be a JSON object'
+				}
+			}
+		};
+	}
+
+	const data = body as Record<string, unknown>;
+
+	// category のバリデーション（必須、INSIGHT/QUESTION/EMOTION）
+	if (!data.category || typeof data.category !== 'string') {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'category is required and must be a string'
+				}
+			}
+		};
+	}
+
+	if (!VALID_CATEGORIES.includes(data.category as MetaNoteCategory)) {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: `category must be one of: ${VALID_CATEGORIES.join(', ')}`
+				}
+			}
+		};
+	}
+
+	const category = data.category as MetaNoteCategory;
+
+	// body のバリデーション（必須、文字列、1文字以上）
+	if (!data.body || typeof data.body !== 'string' || data.body.trim().length === 0) {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'body is required and must be a non-empty string'
+				}
+			}
+		};
+	}
+
+	// themeIds のバリデーション（オプション、UUID配列）
+	let themeIds: string[] | undefined = undefined;
+	if ('themeIds' in data) {
+		if (!Array.isArray(data.themeIds)) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'themeIds must be an array'
+					}
+				}
+			};
+		}
+
+		const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+		if (!data.themeIds.every((id) => typeof id === 'string' && uuidRegex.test(id))) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'themeIds must be an array of valid UUIDs'
+					}
+				}
+			};
+		}
+
+		themeIds = data.themeIds as string[];
+	}
+
+	// relatedLogId のバリデーション（オプション、UUIDまたはnull）
+	let relatedLogId: string | null | undefined = undefined;
+	if ('relatedLogId' in data) {
+		if (data.relatedLogId === null) {
+			relatedLogId = null;
+		} else if (typeof data.relatedLogId === 'string') {
+			const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+			if (!uuidRegex.test(data.relatedLogId)) {
+				return {
+					data: null,
+					error: {
+						error: {
+							code: 'BadRequest',
+							message: 'relatedLogId must be a valid UUID or null'
+						}
+					}
+				};
+			}
+			relatedLogId = data.relatedLogId;
+		} else {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'relatedLogId must be a string or null'
+					}
+				}
+			};
+		}
+	}
+
+	return {
+		data: {
+			category,
+			body: data.body,
+			...(themeIds !== undefined && { themeIds }),
+			...(relatedLogId !== undefined && { relatedLogId })
+		},
+		error: undefined
+	};
+}
+
+/**
+ * MetaNotePatch リクエストボディをバリデーション
+ * @param body - リクエストボディ（unknown）
+ * @returns バリデーション結果
+ */
+export function validateNotePatch(body: unknown): ValidatedNotePatch {
+	// bodyがオブジェクトか確認
+	if (!body || typeof body !== 'object') {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'Request body must be a JSON object'
+				}
+			}
+		};
+	}
+
+	const data = body as Record<string, unknown>;
+	const patch: {
+		category?: MetaNoteCategory;
+		body?: string;
+		themeIds?: string[];
+		relatedLogId?: string | null;
+	} = {};
+
+	// category（任意、INSIGHT/QUESTION/EMOTION）
+	if ('category' in data) {
+		if (typeof data.category !== 'string') {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'category must be a string'
+					}
+				}
+			};
+		}
+
+		if (!VALID_CATEGORIES.includes(data.category as MetaNoteCategory)) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: `category must be one of: ${VALID_CATEGORIES.join(', ')}`
+					}
+				}
+			};
+		}
+
+		patch.category = data.category as MetaNoteCategory;
+	}
+
+	// body（任意、文字列、1文字以上）
+	if ('body' in data) {
+		if (typeof data.body !== 'string' || data.body.trim().length === 0) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'body must be a non-empty string'
+					}
+				}
+			};
+		}
+		patch.body = data.body;
+	}
+
+	// themeIds（任意、UUID配列）
+	if ('themeIds' in data) {
+		if (!Array.isArray(data.themeIds)) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'themeIds must be an array'
+					}
+				}
+			};
+		}
+
+		const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+		if (!data.themeIds.every((id) => typeof id === 'string' && uuidRegex.test(id))) {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'themeIds must be an array of valid UUIDs'
+					}
+				}
+			};
+		}
+
+		patch.themeIds = data.themeIds as string[];
+	}
+
+	// relatedLogId（任意、UUIDまたはnull）
+	if ('relatedLogId' in data) {
+		if (data.relatedLogId === null) {
+			patch.relatedLogId = null;
+		} else if (typeof data.relatedLogId === 'string') {
+			const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+			if (!uuidRegex.test(data.relatedLogId)) {
+				return {
+					data: null,
+					error: {
+						error: {
+							code: 'BadRequest',
+							message: 'relatedLogId must be a valid UUID or null'
+						}
+					}
+				};
+			}
+			patch.relatedLogId = data.relatedLogId;
+		} else {
+			return {
+				data: null,
+				error: {
+					error: {
+						code: 'BadRequest',
+						message: 'relatedLogId must be a string or null'
+					}
+				}
+			};
+		}
+	}
+
+	// 何も更新項目がない場合
+	if (Object.keys(patch).length === 0) {
+		return {
+			data: null,
+			error: {
+				error: {
+					code: 'BadRequest',
+					message: 'At least one field must be provided'
+				}
+			}
+		};
+	}
+
+	return { data: patch };
+}
