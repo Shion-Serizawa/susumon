@@ -85,6 +85,9 @@ describe('PATCH /api/notes/[id]', () => {
 			category: 'QUESTION',
 			body: '更新後の本文'
 		});
+		// 関連データが含まれる（GETと同じ形式）
+		expect(body.themes).toBeDefined();
+		expect(body.relatedLog).toBe(null); // 関連ログなし
 	});
 
 	it('should update only specified fields', async () => {
@@ -169,6 +172,12 @@ describe('PATCH /api/notes/[id]', () => {
 		expect(body).toMatchObject({
 			id: note.id
 		});
+		// 更新後のthemesが含まれる
+		expect(body.themes).toHaveLength(1);
+		expect(body.themes[0]).toMatchObject({
+			id: theme2.id,
+			name: 'テーマ2'
+		});
 	});
 
 	it('should update relatedLogId', async () => {
@@ -216,6 +225,11 @@ describe('PATCH /api/notes/[id]', () => {
 		expect(body).toMatchObject({
 			id: note.id,
 			relatedLogId: log.id
+		});
+		// 関連ログの詳細が含まれる
+		expect(body.relatedLog).toMatchObject({
+			id: log.id,
+			summary: '学習ログ'
 		});
 	});
 

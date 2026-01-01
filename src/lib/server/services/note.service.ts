@@ -226,7 +226,7 @@ export class NoteService {
 			themeIds?: string[];
 			relatedLogId?: string | null;
 		};
-	}): Promise<MetaNote | null> {
+	}): Promise<MetaNoteWithRelations | null> {
 		return prisma.$transaction(async (tx) => {
 			// 更新対象のデータ（noteDate を除く）
 			const updateData: Prisma.MetaNoteUpdateInput = {};
@@ -275,13 +275,43 @@ export class NoteService {
 				}
 			}
 
-			// 更新後のデータを取得
-			return tx.metaNote.findFirst({
+			// 更新後のデータを取得（関連データ含む）
+			const updatedNote = await tx.metaNote.findFirst({
 				where: {
 					userId: params.userId,
 					id: params.noteId
+				},
+				include: {
+					relatedLog: {
+						select: {
+							id: true,
+							themeId: true,
+							date: true,
+							summary: true
+						}
+					},
+					metaNoteThemes: {
+						include: {
+							theme: {
+								select: {
+									id: true,
+									name: true
+								}
+							}
+						}
+					}
 				}
 			});
+
+			if (!updatedNote) {
+				return null;
+			}
+
+			// metaNoteThemes → themes への変換
+			return {
+				...updatedNote,
+				themes: updatedNote.metaNoteThemes.map((mnt) => mnt.theme)
+			};
 		});
 	}
 
