@@ -117,3 +117,57 @@ export async function createTestLog(userId: string, data: {
 
 	return result[0];
 }
+
+/**
+ * Create a test meta note directly via SQL to bypass security guards
+ * Returns the created note data
+ */
+export async function createTestNote(userId: string, data: {
+	category: 'INSIGHT' | 'QUESTION' | 'EMOTION';
+	body: string;
+	noteDate: string;
+	relatedLogId?: string | null;
+	themeIds?: string[];
+	state?: 'ACTIVE' | 'ARCHIVED' | 'DELETED';
+}) {
+	// Use queryRaw with RETURNING to get the created record
+	const result = await prisma.$queryRaw<Array<{
+		id: string;
+		user_id: string;
+		category: string;
+		body: string;
+		note_date: Date;
+		related_log_id: string | null;
+		state: string;
+		created_at: Date;
+		updated_at: Date;
+	}>>`
+		INSERT INTO meta_notes (user_id, category, body, note_date, related_log_id, state, state_changed_at, created_at, updated_at)
+		VALUES (
+			${userId}::uuid,
+			${data.category},
+			${data.body},
+			${data.noteDate}::date,
+			${data.relatedLogId ?? null}::uuid,
+			${(data.state ?? 'ACTIVE')}::"ResourceState",
+			NOW(),
+			NOW(),
+			NOW()
+		)
+		RETURNING *
+	`;
+
+	const note = result[0];
+
+	// Insert theme relationships if themeIds provided
+	if (data.themeIds && data.themeIds.length > 0) {
+		for (const themeId of data.themeIds) {
+			await prisma.$executeRaw`
+				INSERT INTO meta_note_themes (meta_note_id, theme_id, created_at)
+				VALUES (${note.id}::uuid, ${themeId}::uuid, NOW())
+			`;
+		}
+	}
+
+	return note;
+}
