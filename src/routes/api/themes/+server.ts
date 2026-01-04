@@ -128,8 +128,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		logDatabaseError('POST /api/themes', error, {
 			data: {
 				hasName: !!themeData.name,
-				hasGoal: !!themeData.goal,
-				hasNotes: themeData.notes !== undefined
+				hasGoal: !!themeData.goal
 			}
 		});
 		return json(

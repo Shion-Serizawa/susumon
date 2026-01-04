@@ -10,7 +10,7 @@
     "test": "deno task test:unit",
     "ensure:env": "deno run -A scripts/ensure-env.ts",
     "prisma": "deno task ensure:env && deno run -A --allow-scripts=npm:prisma,npm:@prisma/engines --env-file=.env npm:prisma@7",
-    "db:generate": "deno task prisma -- generate",
+    "db:generate": "deno task prisma -- generate && deno run -A scripts/prisma-postgenerate.ts",
     "db:migrate:dev": "deno task prisma -- migrate dev",
     "db:migrate:deploy": "deno task prisma -- migrate deploy",
     "db:migrate:status": "deno task prisma -- migrate status",

@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '$lib/server/db';
-import type { Prisma, LearningLogEntry } from '@prisma/client';
+import type { LearningLogEntry, Prisma } from '../../../../.prisma/client/index.js';
 import type { LogCursor } from '$lib/server/api-types';
 import { buildPaginatedResponse } from '$lib/server/pagination';
 import { formatDateAsLocal } from '$lib/server/date-utils';

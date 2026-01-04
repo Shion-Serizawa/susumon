@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '$lib/server/db';
-import type { Prisma, Theme } from '@prisma/client';
+import type { Prisma, Theme } from '../../../../.prisma/client/index.js';
 import type { ThemeCursor } from '$lib/server/api-types';
 import { buildPaginatedResponse } from '$lib/server/pagination';
 
