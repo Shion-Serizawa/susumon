@@ -46,7 +46,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 
 		return json(theme);
 	} catch (error) {
-		logDatabaseError('GET /api/themes/[id]', error, { themeId });
+		logDatabaseError('GET /api/themes/[id]', error, { themeId: themeIdResult.value });
 		return json(
 			{ error: { code: 'InternalServerError', message: 'Database query failed' } },
 			{ status: 500 }
@@ -117,11 +117,10 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 		return json(theme);
 	} catch (error) {
 		logDatabaseError('PATCH /api/themes/[id]', error, {
-			themeId,
+			themeId: themeIdResult.value,
 			updates: {
 				hasName: patchData.name !== undefined,
 				hasGoal: patchData.goal !== undefined,
-				hasNotes: patchData.notes !== undefined,
 				hasIsCompleted: patchData.isCompleted !== undefined
 			}
 		});

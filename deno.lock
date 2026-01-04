@@ -3,6 +3,7 @@
   "specifiers": {
     "npm:@deno/svelte-adapter@0.1": "0.1.0_@sveltejs+kit@2.49.2__@sveltejs+vite-plugin-svelte@6.2.1___svelte@5.46.0____acorn@8.15.0___vite@7.2.7____@types+node@22.19.3____picomatch@4.0.3___@types+node@22.19.3__svelte@5.46.0___acorn@8.15.0__vite@7.2.7___@types+node@22.19.3___picomatch@4.0.3__acorn@8.15.0__@types+node@22.19.3_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.46.0___acorn@8.15.0__vite@7.2.7___@types+node@22.19.3___picomatch@4.0.3__@types+node@22.19.3_svelte@5.46.0__acorn@8.15.0_vite@7.2.7__@types+node@22.19.3__picomatch@4.0.3_@types+node@22.19.3",
     "npm:@prisma/adapter-pg@^7.2.0": "7.2.0",
+    "npm:@prisma/client-runtime-utils@^7.1.0": "7.1.0",
     "npm:@prisma/client@7": "7.1.0_prisma@7.1.0__typescript@5.9.3_typescript@5.9.3",
     "npm:@supabase/supabase-js@^2.48.1": "2.87.1",
     "npm:@sveltejs/kit@2": "2.49.2_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.46.0___acorn@8.15.0__vite@7.2.7___@types+node@22.19.3___picomatch@4.0.3__@types+node@22.19.3_svelte@5.46.0__acorn@8.15.0_vite@7.2.7__@types+node@22.19.3__picomatch@4.0.3_acorn@8.15.0_@types+node@22.19.3",
@@ -1649,6 +1650,7 @@
       "dependencies": [
         "npm:@deno/svelte-adapter@0.1",
         "npm:@prisma/adapter-pg@^7.2.0",
+        "npm:@prisma/client-runtime-utils@^7.1.0",
         "npm:@prisma/client@7",
         "npm:@supabase/supabase-js@^2.48.1",
         "npm:@sveltejs/kit@^2.49.1",

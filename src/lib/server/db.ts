@@ -1,6 +1,5 @@
 // Prisma v7 with PostgreSQL adapter for Deno Deploy
-import prismaClientPkg from '@prisma/client';
-const { PrismaClient, Prisma } = prismaClientPkg;
+import { PrismaClient } from '$lib/server/prisma-client';
 import { PrismaPg } from '@prisma/adapter-pg';
 // @ts-expect-error - pg module doesn't have types in Deno environment
 import pg from 'pg';

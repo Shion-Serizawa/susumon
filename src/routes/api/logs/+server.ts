@@ -10,7 +10,7 @@ import {
 import { decodeCursor } from '$lib/server/pagination';
 import { logService } from '$lib/server/services/log.service';
 import { logDatabaseError } from '$lib/server/error-logging';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '$lib/server/prisma-client';
 
 /**
  * GET /api/logs
@@ -184,8 +184,10 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 		// Prismaエラーの型ガード
 		if (error instanceof Prisma.PrismaClientKnownRequestError) {
+			const prismaError = error as { code: string };
+
 			// P2002: 一意制約違反（1日1テーマ1ログ制約）
-			if (error.code === 'P2002') {
+			if (prismaError.code === 'P2002') {
 				return json(
 					{
 						error: {
@@ -198,7 +200,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			}
 
 			// P2003: 外部キー制約違反（themeIdが存在しない）
-			if (error.code === 'P2003') {
+			if (prismaError.code === 'P2003') {
 				return json(
 					{ error: { code: 'BadRequest', message: 'Referenced theme not found' } },
 					{ status: 400 }
